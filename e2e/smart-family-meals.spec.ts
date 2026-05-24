@@ -112,8 +112,8 @@ test('ingredient and recipe flow calculates nutrition and safety', async ({ page
   await page.getByTestId('create-ingredient').click()
   const ingredientForm = page.getByTestId('ingredient-form')
   await ingredientForm.getByLabel('Name').fill(ingredientName)
-  await ingredientForm.getByTestId('food-category-search').fill('grain')
-  await ingredientForm.getByTestId('food-category-option-grains_starches').click()
+  await ingredientForm.getByTestId('food-category-search').fill('protein')
+  await ingredientForm.getByTestId('food-category-option-proteins').click()
   await ingredientForm.getByLabel('Calories').fill('120')
   await ingredientForm.getByLabel('Protein').fill('4')
   await ingredientForm.getByLabel('Carbs').fill('21')
@@ -122,6 +122,7 @@ test('ingredient and recipe flow calculates nutrition and safety', async ({ page
   await waitForRemoteRow('ingredients', 'name', ingredientName)
   await page.getByTestId('ingredient-search').fill(ingredientName)
   await expect(page.getByText(ingredientName).first()).toBeVisible()
+  await expect(page.locator('table').getByText('Proteins').first()).toBeVisible()
 
   await page.goto('/app/recipes')
   await page.getByTestId('create-recipe').click()
@@ -306,15 +307,18 @@ test('AI Chef renders structured validated suggestions without applying unsafe o
           {
             title: 'Safe Rice Bowl',
             ingredients: ['rice', 'chicken'],
+            category_code: 'other',
             safety_status: 'safe',
             nutrition_status: 'available',
             rotation_status: 'allowed',
             usable: true,
             nutrition: { calories: 430, protein_g: 31 },
+            safety_notes: ['Unknown category "chef_special" mapped to other.'],
           },
           {
             title: 'Sesame Tahini Plate',
             ingredients: ['tahini', 'sesame'],
+            category_code: 'other',
             safety_status: 'blocked',
             nutrition_status: 'review_needed',
             rotation_status: 'allowed',
@@ -329,6 +333,7 @@ test('AI Chef renders structured validated suggestions without applying unsafe o
   await page.goto('/app/ai-chef')
   await page.getByTestId('ai-action-weeklyMenu').click()
   await expect(page.getByRole('heading', { name: 'Safe Rice Bowl' })).toBeVisible()
+  await expect(page.getByText('Unknown category "chef_special" mapped to other.')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Sesame Tahini Plate' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Structured JSON Output' })).toBeVisible()
   await expect(page.getByRole('button', { name: /Apply Safe Suggestion/i }).nth(1)).toBeDisabled()
@@ -356,6 +361,74 @@ test('AI Chef shows Gemini setup when user key is missing', async ({ page }) => 
   await expect(page.getByTestId('ai-key-setup-card')).toContainText('Gemini key required')
   await page.getByTestId('ai-go-settings').click()
   await expect(page).toHaveURL(/\/app\/settings/)
+})
+
+test('Gemini invalid key state stays secret and guides repair', async ({ page }) => {
+  let status = {
+    provider: 'gemini',
+    model: 'gemini-2.5-flash',
+    is_enabled: false,
+    configured: false,
+    key_status: 'not_configured',
+    key_last4: null,
+    last_tested_at: null,
+    last_error: null,
+  }
+  await page.route('**/functions/v1/ai-key-manager', async (route) => {
+    const body = JSON.parse(route.request().postData() || '{}')
+    if (body.action === 'test_key') {
+      status = {
+        ...status,
+        key_status: 'invalid',
+        key_last4: '9999',
+        last_tested_at: new Date().toISOString(),
+        last_error: 'Gemini test returned HTTP 403',
+      }
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(status) })
+  })
+  await login(page)
+  await page.goto('/app/settings')
+  await page.getByTestId('settings-gemini-key').fill('fake-gemini-key-9999')
+  await page.getByTestId('settings-ai-test').click()
+  await expect(page.getByTestId('settings-ai-result')).toContainText(/AI backend is not configured yet|Unable to reach the AI backend|AI backend connection failed/i)
+  await expect(page.getByText('fake-gemini-key-9999')).toHaveCount(0)
+  await page.goto('/app/ai-chef')
+  await expect(page.getByTestId('ai-key-invalid-card')).toContainText('Gemini key test failed')
+  await expect(page.getByTestId('ai-replace-key')).toBeVisible()
+})
+
+test('Gemini key delete returns AI Chef to setup state', async ({ page }) => {
+  let status = {
+    provider: 'gemini',
+    model: 'gemini-2.5-flash',
+    is_enabled: true,
+    configured: true,
+    key_status: 'valid',
+    key_last4: '1234',
+    last_tested_at: new Date().toISOString(),
+    last_error: null,
+  }
+  await page.route('**/functions/v1/ai-key-manager', async (route) => {
+    const body = JSON.parse(route.request().postData() || '{}')
+    if (body.action === 'delete_key') {
+      status = {
+        ...status,
+        is_enabled: false,
+        configured: false,
+        key_status: 'deleted',
+        key_last4: null,
+        last_tested_at: new Date().toISOString(),
+      }
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(status) })
+  })
+  await login(page)
+  await page.goto('/app/settings')
+  await page.getByTestId('settings-ai-delete-key').click()
+  await expect(page.getByTestId('settings-ai-result')).toContainText('Gemini key deleted.')
+  await page.goto('/app/ai-chef')
+  await expect(page.getByTestId('ai-key-setup-card')).toContainText('Gemini key required')
 })
 
 test('print reports expose professional chef sheet sections', async ({ page }) => {

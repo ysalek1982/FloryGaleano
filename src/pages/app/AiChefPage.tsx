@@ -36,6 +36,8 @@ export default function AiChefPage() {
     purchasePriority: 'purchase_priority',
     explainMissing: 'explain_missing_items',
   }
+  const keyNeedsSetup = !aiStatus.status.configured && ['not_configured', 'deleted'].includes(aiStatus.status.key_status)
+  const keyNeedsRepair = !aiStatus.status.configured && ['invalid', 'test_failed'].includes(aiStatus.status.key_status)
 
   const runAction = async (actionKey: string) => {
     setLoading(true)
@@ -72,7 +74,7 @@ export default function AiChefPage() {
       <PageHeader title={t('ai.title')} subtitle={t('ai.subtitle')} />
       <div className="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
         <Card>
-          {!aiStatus.status.configured && (
+          {keyNeedsSetup && (
             <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4" data-testid="ai-key-setup-card">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="font-serif text-xl font-semibold">{t('ai.keySetupTitle')}</h2>
@@ -85,9 +87,27 @@ export default function AiChefPage() {
               </Button>
             </div>
           )}
+          {keyNeedsRepair && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4" data-testid="ai-key-invalid-card">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-serif text-xl font-semibold">{t('ai.keyInvalidTitle')}</h2>
+                <Badge status="blocked">{t(`settings.aiKeyStatus.${aiStatus.status.key_status}`)}</Badge>
+              </div>
+              <p className="mt-2 text-sm text-red-900">{t('ai.keyInvalidBody')}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button variant="secondary" onClick={() => void aiStatus.testConnection(undefined, aiStatus.status.model)} disabled={aiStatus.testing} data-testid="ai-test-again">
+                  {aiStatus.testing ? t('common.loading') : t('settings.testAgain')}
+                </Button>
+                <Button variant="ai" onClick={() => navigate('/app/settings')} data-testid="ai-replace-key">
+                  <Settings className="h-4 w-4" />
+                  {t('settings.replaceKey')}
+                </Button>
+              </div>
+            </div>
+          )}
           {aiStatus.status.configured && (
             <p className="mb-4 rounded-lg border border-forest-100 bg-forest-50 p-3 text-sm font-semibold text-forest-800" data-testid="ai-key-source">
-              {t('ai.usingUserGeminiKey')}
+              {t('ai.usingUserGeminiKey')} - {aiStatus.status.model}
             </p>
           )}
           <div className="grid gap-4">

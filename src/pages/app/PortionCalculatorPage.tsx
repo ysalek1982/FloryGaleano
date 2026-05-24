@@ -64,7 +64,7 @@ export default function PortionCalculatorPage() {
       <PageHeader title={t('portion.title')} subtitle={t('portion.subtitle')} action={<div className="flex flex-wrap gap-2"><Button variant="secondary" onClick={() => window.print()}><Printer className="h-4 w-4" />{t('common.print')}</Button><ExportMenu report={exportReport} testIdPrefix="portion-export" /></div>} />
       <Card>
         <div className="grid gap-3 md:grid-cols-3">
-          <Field label={t('common.family')}><select className="input" value={family?.id}>{data.families.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
+          <Field label={t('common.family')}><select className="input" value={family?.id || ''} disabled>{data.families.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
           <Field label={t('portion.selectRecipe')}><select className="input" value={recipeId} onChange={(event) => setRecipeId(event.target.value)}>{data.recipes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
           <Field label={t('portion.dateRange')}><input className="input" value={`${todayIso()} - ${addDays(todayIso(), 6)}`} readOnly /></Field>
         </div>

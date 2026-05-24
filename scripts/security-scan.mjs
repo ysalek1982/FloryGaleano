@@ -31,6 +31,9 @@ for (const file of files) {
   if (isFrontend && /localStorage\.[\s\S]{0,120}(gemini|apiKey|api_key|ai[-_ ]?key)/i.test(source)) {
     findings.push(`Gemini/API keys must not be persisted to localStorage in ${file}`)
   }
+  if (isFrontend && /\b(encrypted_key|key_iv|vault_secret_id)\b/.test(source)) {
+    findings.push(`Frontend must not select or render raw AI key storage fields in ${file}`)
+  }
 }
 
 if (findings.length) {

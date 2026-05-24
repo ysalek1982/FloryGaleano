@@ -31,8 +31,9 @@ export function AiSettingsPanel({ settings }: { settings: SettingsForm }) {
       </div>
       <div className="mt-4 grid gap-4">
         <Info label={t('settings.aiBackend')} value={t('settings.edgeFunctionOnly')} />
+        <Info label={t('settings.keySecurity')} value={t('settings.geminiEncryptedNotice')} />
         <Info label={t('settings.geminiConfigured')} value={ai.status.configured ? t('common.yes') : t('common.no')} />
-        <Info label={t('settings.keyLast4')} value={ai.status.key_last4 ? `•••• ${ai.status.key_last4}` : t('common.notConfigured')} />
+        <Info label={t('settings.keyLast4')} value={ai.status.key_last4 ? `**** ${ai.status.key_last4}` : t('common.notConfigured')} />
         <Info label={t('settings.lastKeyTest')} value={ai.status.last_tested_at || t('settings.notRecorded')} />
         <Field label={t('settings.model')}>
           <select

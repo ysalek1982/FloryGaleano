@@ -35,7 +35,11 @@ export default function IngredientsPage() {
       const searchText = [ingredient.name, ingredient.category, categoryRecord?.name_en, categoryRecord?.name_es, ...(categoryRecord?.aliases_en || []), ...(categoryRecord?.aliases_es || [])].join(' ').toLowerCase()
       return searchText.includes(query.toLowerCase())
     })
-    .filter((ingredient) => category === 'all' || ingredient.category_id === category || ingredient.category === category)
+    .filter((ingredient) => {
+      if (category === 'all') return true
+      const categoryRecord = foodCategories.findByIdOrCode(ingredient.category_id || ingredient.category) || foodCategories.findByIdOrCode('other')
+      return categoryRecord?.id === category
+    })
     .filter((ingredient) => source === 'all' || ingredient.source === source)
     .filter((ingredient) => allergen === 'all' || [...ingredient.allergen_tags, ...ingredient.may_contain_tags].includes(allergen))
     .filter((ingredient) => !missingOnly || (ingredient.calories_per_100g === 0 && ingredient.protein_g_per_100g === 0))
@@ -72,7 +76,7 @@ export default function IngredientsPage() {
           rows={ingredients.map((ingredient) => {
             const usage = data.recipeIngredients.filter((row) => row.ingredient_id === ingredient.id).length
             const missing = ingredient.calories_per_100g === 0 && ingredient.protein_g_per_100g === 0
-            const categoryRecord = foodCategories.findByIdOrCode(ingredient.category_id || ingredient.category)
+            const categoryRecord = foodCategories.findByIdOrCode(ingredient.category_id || ingredient.category) || foodCategories.findByIdOrCode('other')
             return [
               <strong key="name">{ingredient.name}</strong>,
               <Badge key="category" status="ai">{categoryRecord ? foodCategories.getName(categoryRecord) : ingredient.category || '-'}</Badge>,

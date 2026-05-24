@@ -198,7 +198,7 @@ export function Info({ label, value }: { label: string; value: string | number }
 }
 
 export function SimpleList({ items }: { items: string[] }) {
-  return <div className="grid gap-2">{items.length ? items.map((item) => <p key={item} className="rounded-md bg-stone-50 p-2 text-sm text-slate-700">{item}</p>) : <EmptyState text="-" />}</div>
+  return <div className="grid gap-2">{items.length ? items.map((item, index) => <p key={`${item}-${index}`} className="rounded-md bg-stone-50 p-2 text-sm text-slate-700">{item}</p>) : <EmptyState text="-" />}</div>
 }
 
 export function FormSection({ title, children }: { title: string; children: React.ReactNode }) {

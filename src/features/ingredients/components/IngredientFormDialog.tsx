@@ -20,11 +20,12 @@ export default function IngredientFormDialog({
 }) {
   const { t } = useTranslation()
   const { findByIdOrCode } = useFoodCategories()
-  const initialCategory = findByIdOrCode(ingredient?.category_id || ingredient?.category)
+  const fallbackCategory = findByIdOrCode('other')
+  const initialCategory = findByIdOrCode(ingredient?.category_id || ingredient?.category) || fallbackCategory
   const schema = z.object({
     name: z.string().min(1),
-    category: z.string().optional(),
-    category_id: z.string().optional(),
+    category: z.string().min(1),
+    category_id: z.string().min(1),
     default_unit: z.string().min(1),
     source: z.enum(['manual', 'USDA', 'AI', 'imported']),
     calories_per_100g: z.coerce.number().min(0),
@@ -49,7 +50,7 @@ export default function IngredientFormDialog({
     resolver: zodResolver(schema),
     defaultValues: {
       name: ingredient?.name || '',
-      category: initialCategory?.code || ingredient?.category || '',
+      category: initialCategory?.code || ingredient?.category || 'other',
       category_id: initialCategory?.id || ingredient?.category_id || '',
       default_unit: ingredient?.default_unit || 'g',
       source: ingredient?.source || 'manual',

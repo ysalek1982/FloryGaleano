@@ -9,10 +9,14 @@ describe('food categories', () => {
     expect(protein).toBeTruthy()
     expect(categorySearchText(protein!, 'en')).toContain('beef')
     expect(categorySearchText(protein!, 'es')).toContain('pollo')
+    const fats = foodCategories.find((category) => category.code === 'fats_oils')
+    expect(fats).toBeTruthy()
+    expect(categorySearchText(fats!, 'es')).toContain('aceite')
   })
 
   it('maps unknown category suggestions to predefined categories or other', () => {
     expect(mapUnknownCategory(foodCategories, 'proteína')?.code).toBe('proteins')
+    expect(mapUnknownCategory(foodCategories, 'aceite')?.code).toBe('fats_oils')
     expect(mapUnknownCategory(foodCategories, 'mystery category')?.code).toBe('other')
   })
 })

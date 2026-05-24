@@ -39,7 +39,10 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return json({ ok: true })
 
   try {
-    const body = await req.json()
+    const body = await req.json().catch(() => null)
+    if (!body || typeof body !== 'object') {
+      return json({ error: 'Malformed AI Chef request.' }, 400)
+    }
     const action = normalizeAction(body?.action)
     if (!supportedActions.has(action)) {
       return json({ error: 'Unsupported AI Chef action.' }, 400)
@@ -63,9 +66,10 @@ serve(async (req) => {
       auth: { persistSession: false, autoRefreshToken: false },
     })
     const { data: userData, error: userError } = await admin.auth.getUser(token)
+    if (userError || !userData.user) return json({ error: 'Unauthorized.' }, 401)
 
     if (action === 'ping') {
-      const userKey = userData.user ? await loadUserGeminiKey(admin, userData.user.id) : null
+      const userKey = await loadUserGeminiKey(admin, userData.user.id)
       const hasPlatformFallback = platformFallbackEnabled && Boolean(platformGeminiApiKey)
       return json({
         configured: Boolean(supabaseUrl && serviceRoleKey && (userKey?.apiKey || hasPlatformFallback)),
@@ -79,8 +83,6 @@ serve(async (req) => {
         last_tested_at: userKey?.lastTestedAt || null,
       })
     }
-
-    if (userError || !userData.user) return json({ error: 'Unauthorized.' }, 401)
 
     const context = await loadFamilyContext(admin, userData.user.id, body?.family_id)
     if (!context.family) return json({ error: 'No accessible family context found.' }, 404)
@@ -350,6 +352,7 @@ function validateAiOutput(
   const allergies = Array.isArray(context.allergies) ? context.allergies as Array<Record<string, unknown>> : []
   const menuHistory = Array.isArray(context.menu_history) ? context.menu_history as Array<Record<string, unknown>> : []
   const categoryCodes = new Set(arrayRecords(context.food_categories).map((category) => String(category.code)))
+  const categories = arrayRecords(context.food_categories)
   const blockedTerms = allergies
     .flatMap((allergy) => [allergy.allergen_name, allergy.normalized_allergen_name])
     .filter(Boolean)
@@ -365,20 +368,17 @@ function validateAiOutput(
     const missingNutrition = !nutrition || nutrition.calories == null || nutrition.protein_g == null
     const existingStatus = String(suggestion.safety_status || 'review_needed')
     const inventoryValidation = validateInventorySuggestion(suggestion, inventoryForecast)
-    const categoryCode = String(suggestion.category_code || '')
-    const categoryWarning = categoryCode && !categoryCodes.has(categoryCode)
-      ? `Unknown category "${categoryCode}" mapped to other.`
-      : ''
+    const category = normalizeSuggestionCategory(suggestion, categories, categoryCodes)
     const safetyStatus = matched.length > 0
       ? 'blocked'
-      : rotation.status === 'blocked' || missingNutrition || inventoryValidation.status === 'review_needed' || Boolean(categoryWarning)
+      : rotation.status === 'blocked' || missingNutrition || inventoryValidation.status === 'review_needed' || Boolean(category.warning)
         ? 'review_needed'
         : inventoryValidation.status === 'blocked'
           ? 'blocked'
         : existingStatus
     return {
       ...suggestion,
-      category_code: categoryWarning ? 'other' : suggestion.category_code,
+      category_code: category.code,
       safety_status: safetyStatus,
       usable: safetyStatus === 'safe',
       rotation_status: rotation.status,
@@ -390,7 +390,7 @@ function validateAiOutput(
         ...(rotation.note ? [rotation.note] : []),
         ...(missingNutrition ? ['Nutrition data is incomplete.'] : []),
         ...inventoryValidation.notes,
-        ...(categoryWarning ? [categoryWarning] : []),
+        ...(category.warning ? [category.warning] : []),
       ],
     }
   })
@@ -418,6 +418,43 @@ function validateAiOutput(
     freezer_first_candidates: inventoryForecast.freezer_first_candidates,
     purchase_priority: inventoryForecast.purchase_priority,
   }
+}
+
+function normalizeSuggestionCategory(
+  suggestion: Record<string, unknown>,
+  categories: Array<Record<string, unknown>>,
+  categoryCodes: Set<string>,
+) {
+  const rawCode = String(suggestion.category_code || '').trim()
+  if (rawCode && categoryCodes.has(rawCode)) return { code: rawCode, warning: '' }
+  const inferred = inferCategoryCode(suggestion, categories)
+  if (rawCode && !categoryCodes.has(rawCode)) {
+    return {
+      code: inferred || 'other',
+      warning: `Unknown category "${rawCode}" mapped to ${inferred || 'other'}.`,
+    }
+  }
+  if (inferred) return { code: inferred, warning: `Missing category_code inferred as ${inferred}.` }
+  return { code: 'other', warning: 'Missing category_code mapped to other.' }
+}
+
+function inferCategoryCode(suggestion: Record<string, unknown>, categories: Array<Record<string, unknown>>) {
+  const text = [
+    suggestion.title,
+    ...(Array.isArray(suggestion.ingredients) ? suggestion.ingredients : []),
+  ].filter(Boolean).join(' ').toLowerCase()
+  if (!text) return ''
+  const match = categories.find((category) => {
+    const searchable = [
+      category.code,
+      category.name_en,
+      category.name_es,
+      ...(Array.isArray(category.aliases_en) ? category.aliases_en : []),
+      ...(Array.isArray(category.aliases_es) ? category.aliases_es : []),
+    ].filter(Boolean).join(' ').toLowerCase()
+    return searchable.split(/\s+/).some((term) => term.length > 2 && text.includes(term))
+  })
+  return match?.code ? String(match.code) : ''
 }
 
 function fallbackAiResponse({

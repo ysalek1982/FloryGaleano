@@ -13,7 +13,8 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return json({ ok: true })
 
   try {
-    const body = await req.json().catch(() => ({}))
+    const body = await req.json().catch(() => null)
+    if (!body || typeof body !== 'object') return json({ error: 'Malformed AI key request.' }, 400)
     const action = String(body?.action || 'get_status')
     if (!supportedActions.has(action)) return json({ error: 'Unsupported AI key action.' }, 400)
 
@@ -56,18 +57,18 @@ serve(async (req) => {
     const stored = await getRawSettings(admin, userId)
     const apiKey = providedKey || (stored?.encrypted_key && stored?.key_iv ? await decryptSecret(String(stored.encrypted_key), String(stored.key_iv)) : '')
     if (!apiKey) {
-      await upsertStatus(admin, userId, model, 'not_configured', null, null)
+      await upsertStatus(admin, userId, model, 'not_configured', null, null, true)
       return json(await getStatus(admin, userId))
     }
 
     const test = await testGeminiKey(apiKey, model)
     if (action === 'test_key' && !providedKey) {
-      await upsertStatus(admin, userId, model, test.status, stored?.key_last4 ? String(stored.key_last4) : null, test.error)
+      await upsertStatus(admin, userId, model, test.status, stored?.key_last4 ? String(stored.key_last4) : null, test.error, false)
       return json(await getStatus(admin, userId))
     }
 
     if (!test.ok) {
-      await upsertStatus(admin, userId, model, test.status, last4(apiKey), test.error)
+      await upsertStatus(admin, userId, model, test.status, last4(apiKey), test.error, true)
       return json(await getStatus(admin, userId))
     }
 
@@ -154,8 +155,9 @@ async function upsertStatus(
   status: string,
   keyLast4: string | null,
   lastError: string | null,
+  clearStoredKey = false,
 ) {
-  const { error } = await admin.from('user_ai_settings').upsert({
+  const payload: Record<string, unknown> = {
     profile_id: userId,
     provider: 'gemini',
     model,
@@ -165,7 +167,13 @@ async function upsertStatus(
     key_status: status,
     last_error: lastError,
     last_tested_at: new Date().toISOString(),
-  }, { onConflict: 'profile_id,provider' })
+  }
+  if (clearStoredKey) {
+    payload.vault_secret_id = null
+    payload.encrypted_key = null
+    payload.key_iv = null
+  }
+  const { error } = await admin.from('user_ai_settings').upsert(payload, { onConflict: 'profile_id,provider' })
   if (error) throw error
 }
 
