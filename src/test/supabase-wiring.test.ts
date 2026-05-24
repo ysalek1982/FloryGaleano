@@ -25,6 +25,7 @@ describe('Supabase production wiring', () => {
     expect(envExample).toContain('VITE_SUPABASE_URL=https://your-project.supabase.co')
     expect(envExample).toContain('SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>')
     expect(envExample).toContain('GEMINI_API_KEY=<your-gemini-api-key>')
+    expect(envExample).toContain('APP_USER_SECRET_ENCRYPTION_KEY=<generate-a-long-random-encryption-secret>')
     expect(envExample).not.toContain('eyJhbGci')
     expect(envExample).not.toContain('AIza')
     expect(envExample).not.toContain('sbp_')
@@ -46,6 +47,9 @@ describe('Supabase production wiring', () => {
   it('defines secure ai-chef Edge Function with supported actions', () => {
     const edgeFunction = read('supabase/functions/ai-chef/index.ts')
     expect(edgeFunction).toContain("Deno.env.get('GEMINI_API_KEY')")
+    expect(edgeFunction).toContain('PLATFORM_GEMINI_FALLBACK_ENABLED')
+    expect(edgeFunction).toContain('loadUserGeminiKey')
+    expect(edgeFunction).toContain('gemini_key_missing')
     expect(edgeFunction).toContain("Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')")
     expect(edgeFunction).toContain("Deno.env.get('APP_SUPABASE_SERVICE_ROLE_KEY')")
     expect(edgeFunction).toContain('generate_week_menu')
@@ -54,5 +58,15 @@ describe('Supabase production wiring', () => {
     expect(edgeFunction).toContain('validateAiOutput')
     expect(edgeFunction).not.toContain('eyJhbGci')
     expect(edgeFunction).not.toContain('AIza')
+  })
+
+  it('manages BYOK keys only through an authenticated Edge Function', () => {
+    const keyManager = read('supabase/functions/ai-key-manager/index.ts')
+    expect(keyManager).toContain("Deno.env.get('APP_USER_SECRET_ENCRYPTION_KEY')")
+    expect(keyManager).toContain('AES-GCM')
+    expect(keyManager).toContain('save_key')
+    expect(keyManager).toContain('delete_key')
+    expect(keyManager).not.toContain('localStorage')
+    expect(keyManager).not.toContain('AIza')
   })
 })

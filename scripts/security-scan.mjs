@@ -28,6 +28,9 @@ for (const file of files) {
   if (isFrontend && /(SUPABASE_SERVICE_ROLE_KEY|APP_SUPABASE_SERVICE_ROLE_KEY|SUPABASE_DB_PASSWORD|GEMINI_API_KEY|service_role)/.test(source)) {
     findings.push(`Frontend secret reference is not allowed in ${file}`)
   }
+  if (isFrontend && /localStorage\.[\s\S]{0,120}(gemini|apiKey|api_key|ai[-_ ]?key)/i.test(source)) {
+    findings.push(`Gemini/API keys must not be persisted to localStorage in ${file}`)
+  }
 }
 
 if (findings.length) {

@@ -101,6 +101,7 @@ export interface Ingredient extends Timestamped {
   name: string
   normalized_name: string
   category?: string
+  category_id?: string
   default_unit: string
   calories_per_100g: number
   protein_g_per_100g: number
@@ -130,6 +131,23 @@ export interface Ingredient extends Timestamped {
   package_size?: number
   package_unit?: string
   notes?: string
+}
+
+export interface FoodCategory extends Timestamped {
+  id: string
+  code: string
+  parent_code?: string
+  name_en: string
+  name_es: string
+  description_en?: string
+  description_es?: string
+  icon?: string
+  color?: string
+  aliases_en: string[]
+  aliases_es: string[]
+  usda_category_hints: string[]
+  sort_order: number
+  is_active: boolean
 }
 
 export interface Recipe extends Timestamped {
@@ -311,6 +329,7 @@ export interface AppData {
   allergies: Allergy[]
   dietaryRestrictions: DietaryRestriction[]
   foodPreferences: FoodPreference[]
+  foodCategories: FoodCategory[]
   ingredients: Ingredient[]
   recipes: Recipe[]
   recipeIngredients: RecipeIngredient[]

@@ -1,19 +1,23 @@
-import { Brain } from 'lucide-react'
+import { Brain, Settings } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 
 import AiContextPanel from '../../features/ai-chef/components/AiContextPanel'
 import AiResultCards from '../../features/ai-chef/components/AiResultCards'
-import { Button, Card, Field, PageHeader } from '../../features/shared/chefUi'
+import { Badge, Button, Card, Field, PageHeader } from '../../features/shared/chefUi'
 import { useCanWrite } from '../../features/shared/chefHooks'
+import { useAiConnectionTest } from '../../features/settings/hooks/useAiConnectionTest'
 import { useAppData } from '../../lib/AppState'
 import { isSupabaseConfigured, supabase } from '../../lib/supabase'
 import { todayIso } from '../../lib/utils'
 
 export default function AiChefPage() {
   const { t, i18n } = useTranslation()
+  const navigate = useNavigate()
   const { data, addRecipe, addMenuPlanItem } = useAppData()
   const canWrite = useCanWrite()
+  const aiStatus = useAiConnectionTest()
   const [familyId, setFamilyId] = useState(data.families[0]?.id || '')
   const [dinerId, setDinerId] = useState('all')
   const [plannedDate, setPlannedDate] = useState(todayIso())
@@ -68,6 +72,24 @@ export default function AiChefPage() {
       <PageHeader title={t('ai.title')} subtitle={t('ai.subtitle')} />
       <div className="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
         <Card>
+          {!aiStatus.status.configured && (
+            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4" data-testid="ai-key-setup-card">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-serif text-xl font-semibold">{t('ai.keySetupTitle')}</h2>
+                <Badge status="warning">{t(`settings.aiKeyStatus.${aiStatus.status.key_status}`)}</Badge>
+              </div>
+              <p className="mt-2 text-sm text-amber-900">{t('ai.keySetupBody')}</p>
+              <Button className="mt-3" variant="ai" onClick={() => navigate('/app/settings')} data-testid="ai-go-settings">
+                <Settings className="h-4 w-4" />
+                {t('ai.goToSettings')}
+              </Button>
+            </div>
+          )}
+          {aiStatus.status.configured && (
+            <p className="mb-4 rounded-lg border border-forest-100 bg-forest-50 p-3 text-sm font-semibold text-forest-800" data-testid="ai-key-source">
+              {t('ai.usingUserGeminiKey')}
+            </p>
+          )}
           <div className="grid gap-4">
             <Field label={t('common.family')}><select className="input" value={familyId} onChange={(event) => setFamilyId(event.target.value)}>{data.families.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
             <Field label={t('common.diner')}><select className="input" value={dinerId} onChange={(event) => setDinerId(event.target.value)}><option value="all">{t('planner.assignAll')}</option>{data.familyMembers.filter((item) => item.family_id === familyId).map((item) => <option key={item.id} value={item.id}>{item.full_name}</option>)}</select></Field>
@@ -75,7 +97,7 @@ export default function AiChefPage() {
             <textarea className="input min-h-32" placeholder={t('ai.chatPlaceholder')} value={prompt} onChange={(event) => setPrompt(event.target.value)} />
           </div>
           <div className="mt-4 grid gap-2">
-            {actions.map(([key, label]) => <Button key={key} variant="ai" disabled={loading} onClick={() => runAction(key)} data-testid={`ai-action-${key}`}><Brain className="h-4 w-4" />{label}</Button>)}
+            {actions.map(([key, label]) => <Button key={key} variant="ai" disabled={loading || !aiStatus.status.configured} onClick={() => runAction(key)} data-testid={`ai-action-${key}`}><Brain className="h-4 w-4" />{label}</Button>)}
           </div>
         </Card>
         <div className="grid gap-5">

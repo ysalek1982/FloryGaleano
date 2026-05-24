@@ -1,4 +1,4 @@
-import { expect, test, type Download, type Page } from '@playwright/test'
+﻿import { expect, test, type Download, type Page } from '@playwright/test'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -112,7 +112,8 @@ test('ingredient and recipe flow calculates nutrition and safety', async ({ page
   await page.getByTestId('create-ingredient').click()
   const ingredientForm = page.getByTestId('ingredient-form')
   await ingredientForm.getByLabel('Name').fill(ingredientName)
-  await ingredientForm.getByLabel('Category').fill('Grains')
+  await ingredientForm.getByTestId('food-category-search').fill('grain')
+  await ingredientForm.getByTestId('food-category-option-grains_starches').click()
   await ingredientForm.getByLabel('Calories').fill('120')
   await ingredientForm.getByLabel('Protein').fill('4')
   await ingredientForm.getByLabel('Carbs').fill('21')
@@ -293,6 +294,7 @@ test('viewer role sees assigned data but read-only controls are unavailable', as
 })
 
 test('AI Chef renders structured validated suggestions without applying unsafe output', async ({ page }) => {
+  await mockAiKeyConfigured(page)
   await page.route('**/functions/v1/ai-chef', async (route) => {
     await route.fulfill({
       status: 200,
@@ -330,6 +332,30 @@ test('AI Chef renders structured validated suggestions without applying unsafe o
   await expect(page.getByRole('heading', { name: 'Sesame Tahini Plate' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Structured JSON Output' })).toBeVisible()
   await expect(page.getByRole('button', { name: /Apply Safe Suggestion/i }).nth(1)).toBeDisabled()
+})
+
+test('AI Chef shows Gemini setup when user key is missing', async ({ page }) => {
+  await page.route('**/functions/v1/ai-key-manager', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        is_enabled: false,
+        configured: false,
+        key_status: 'not_configured',
+        key_last4: null,
+        last_tested_at: null,
+        last_error: null,
+      }),
+    })
+  })
+  await login(page)
+  await page.goto('/app/ai-chef')
+  await expect(page.getByTestId('ai-key-setup-card')).toContainText('Gemini key required')
+  await page.getByTestId('ai-go-settings').click()
+  await expect(page).toHaveURL(/\/app\/settings/)
 })
 
 test('print reports expose professional chef sheet sections', async ({ page }) => {
@@ -448,6 +474,7 @@ test('freezer inventory links prepared meals to reports', async ({ page }) => {
 })
 
 test('AI Chef inventory-aware action returns structured validation', async ({ page }) => {
+  await mockAiKeyConfigured(page)
   await page.route('**/functions/v1/ai-chef', async (route) => {
     await route.fulfill({
       status: 200,
@@ -514,8 +541,10 @@ test('settings exposes AI and security status without secrets', async ({ page })
   await expect(page.getByTestId('runtime-health-panel')).toContainText('Current Role')
   await expect(page.getByText('Frontend uses publishable Supabase keys only.')).toBeVisible()
   await expect(page.getByText('Secrets are not displayed in the application.')).toBeVisible()
+  await page.getByTestId('settings-gemini-key').fill('invalid-test-key-1234')
   await page.getByTestId('settings-ai-test').click()
-  await expect(page.getByTestId('settings-ai-result')).toContainText(/Backend AI function responded|AI backend is not configured yet/)
+  await expect(page.getByTestId('settings-ai-result')).toContainText(/AI backend is not configured yet|Unable to reach the AI backend|AI backend connection failed/i)
+  await expect(page.getByText('invalid-test-key-1234')).toHaveCount(0)
   await page.getByTestId('runtime-health-check').click()
   await expect(page.getByTestId('runtime-health-panel')).toContainText(/Healthy|Needs attention|Not checked/)
   await expect(page.getByText(/service_role|AIza|sbp_/i)).toHaveCount(0)
@@ -541,7 +570,8 @@ test('bilingual app shell persists Spanish and supports a Spanish CRUD flow', as
   await page.getByTestId('create-ingredient').click()
   const ingredientForm = page.getByTestId('ingredient-form')
   await ingredientForm.getByLabel('Nombre').fill(spanishIngredientName)
-  await ingredientForm.getByLabel('Categoría').fill('Granos')
+  await ingredientForm.getByTestId('food-category-search').fill('proteína')
+  await ingredientForm.getByTestId('food-category-option-proteins').click()
   await ingredientForm.getByRole('button', { name: /^Guardar$/i }).click()
   await waitForRemoteRow('ingredients', 'name', spanishIngredientName)
   await page.getByTestId('ingredient-search').fill(spanishIngredientName)
@@ -560,6 +590,25 @@ async function login(page: Page, user = qaUser) {
   await expect(page).toHaveURL(/\/app\/dashboard/)
   await expect(page.getByTestId('family-selector')).toBeVisible()
   await expect(page.getByTestId('app-data-loading')).toHaveCount(0)
+}
+
+async function mockAiKeyConfigured(page: Page) {
+  await page.route('**/functions/v1/ai-key-manager', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        is_enabled: true,
+        configured: true,
+        key_status: 'valid',
+        key_last4: '1234',
+        last_tested_at: new Date().toISOString(),
+        last_error: null,
+      }),
+    })
+  })
 }
 
 async function downloadAndInspect(page: Page, testId: string, extension: RegExp) {
@@ -754,3 +803,5 @@ function loadEnv(path: string) {
     if (!process.env[key]) process.env[key] = rawValue.replace(/^["']|["']$/g, '')
   }
 }
+
+

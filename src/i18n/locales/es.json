@@ -580,7 +580,13 @@
       "variety": "Mejorar Variedad",
       "translate": "Traducir Instrucciones",
       "productionPlan": "Generar Plan de Producción"
-    }
+    },
+    "keySetupTitle": "Se requiere clave Gemini",
+    "keySetupBody": "Configura tu clave API de Gemini en Ajustes para habilitar sugerencias de IA en esta cuenta.",
+    "goToSettings": "Ir a Ajustes",
+    "usingUserGeminiKey": "Usando tu clave Gemini",
+    "keyInvalidTitle": "La prueba de clave Gemini fall?",
+    "keyMissingCode": "La clave API de Gemini no est? configurada."
   },
   "settings": {
     "title": "Configuración",
@@ -645,6 +651,32 @@
       "not_checked": "No verificado",
       "healthy": "Saludable",
       "warning": "Requiere atencion"
+    },
+    "geminiByokDescription": "Conecta tu propia clave API de Gemini. La clave se cifra en el servidor y no se vuelve a mostrar.",
+    "geminiApiKey": "Clave API de Gemini",
+    "pasteGeminiKey": "Pega tu clave API de Gemini",
+    "replaceGeminiKey": "Pega una nueva clave para reemplazar la guardada",
+    "saveKey": "Guardar clave",
+    "replaceKey": "Reemplazar clave",
+    "deleteKey": "Eliminar clave",
+    "keyLast4": "Terminaci?n de clave",
+    "lastKeyTest": "?ltima prueba de clave",
+    "geminiKeySaved": "Clave Gemini guardada y validada.",
+    "geminiKeyDeleted": "Clave Gemini eliminada.",
+    "createGeminiKey": "Crear tu clave API de Gemini en Google AI Studio",
+    "geminiCostNotice": "El uso y los costos de Gemini pertenecen a tu propia cuenta de Google.",
+    "geminiKeySafetyNotice": "Nunca compartas claves API. Restringe la clave en Google Cloud o configuraci?n de API cuando sea posible.",
+    "aiProvider": "Proveedor de IA",
+    "geminiProvider": "Gemini",
+    "aiKeySource": "Origen de clave IA",
+    "userKey": "Clave del usuario",
+    "platformFallback": "Respaldo de plataforma",
+    "aiKeyStatus": {
+      "not_configured": "No configurada",
+      "valid": "V?lida",
+      "invalid": "Inv?lida",
+      "test_failed": "Prueba fallida",
+      "deleted": "Eliminada"
     }
   },
   "reports": {
@@ -811,5 +843,34 @@
     "ingredients": "Agrega ingredientes con nutrición y datos de alérgenos.",
     "recipes": "Crea una receta con gramos antes de planificar menús.",
     "alerts": "No hay alertas activas."
+  },
+  "foodCategories": {
+    "title": "Categor?as de alimentos",
+    "searchLabel": "Categor?a de alimento",
+    "searchPlaceholder": "Buscar categor?a, alias o c?digo",
+    "selected": "Categor?a seleccionada",
+    "empty": "No hay categor?as coincidentes. Elige Otros si nada encaja.",
+    "browserTitle": "Explorador de categor?as",
+    "futureFoodData": "La b?squeda en base nutricional llegar? luego con USDA FoodData Central.",
+    "codes": {
+      "proteins": "Prote?nas",
+      "seafood": "Mariscos y pescados",
+      "vegetables": "Verduras y vegetales",
+      "fruits": "Frutas",
+      "grains_starches": "Cereales y almidones",
+      "gluten_free_bases": "Bases sin gluten",
+      "legumes": "Legumbres",
+      "dairy_alternatives": "L?cteos y alternativas",
+      "fats_oils": "Grasas y aceites",
+      "nuts_seeds": "Frutos secos y semillas",
+      "herbs_spices": "Hierbas y especias",
+      "sauces_condiments": "Salsas y condimentos",
+      "beverages": "Bebidas",
+      "bakery": "Panader?a",
+      "snacks": "Snacks / meriendas",
+      "processed_packaged": "Procesados y empacados",
+      "sweeteners": "Endulzantes",
+      "other": "Otros"
+    }
   }
 }

@@ -5,6 +5,7 @@ import { useAuth } from '../../../lib/AppState'
 import { appEnv, appVersion, isMonitoringConfigured, isProductionApp } from '../../../lib/env'
 import { isSupabaseConfigured, supabase, supabaseHost } from '../../../lib/supabase'
 import { Badge, Button, Card, Info } from '../../shared/chefUi'
+import { useAiConnectionTest } from '../hooks/useAiConnectionTest'
 
 type HealthStatus = 'not_checked' | 'healthy' | 'warning'
 
@@ -14,6 +15,7 @@ export function RuntimeHealthPanel() {
   const [aiStatus, setAiStatus] = useState<HealthStatus>('not_checked')
   const [geminiConfigured, setGeminiConfigured] = useState<boolean | null>(null)
   const [checking, setChecking] = useState(false)
+  const aiKey = useAiConnectionTest()
   const lastSmoke = localStorage.getItem('smart-family-meals:last-smoke') || t('settings.notRecorded')
 
   const checkAi = async () => {
@@ -26,7 +28,7 @@ export function RuntimeHealthPanel() {
     const { data, error } = await supabase.functions.invoke('ai-chef', { body: { action: 'ping' } })
     setChecking(false)
     setAiStatus(error || !data?.configured ? 'warning' : 'healthy')
-    setGeminiConfigured(Boolean(data?.gemini_configured))
+    setGeminiConfigured(Boolean(data?.ai_configured || data?.gemini_configured))
     if (!error && data?.configured) {
       localStorage.setItem('smart-family-meals:last-smoke', new Date().toISOString())
     }
@@ -48,7 +50,11 @@ export function RuntimeHealthPanel() {
         <Info label={t('settings.supabaseHost')} value={supabaseHost || t('common.notConfigured')} />
         <Info label={t('settings.authStatus')} value={isAuthenticated ? t('settings.authenticated') : t('settings.notAuthenticated')} />
         <Info label={t('settings.edgeFunctionStatus')} value={t(`settings.health.${aiStatus}`)} />
-        <Info label={t('settings.geminiConfigured')} value={geminiConfigured === null ? t('settings.health.not_checked') : geminiConfigured ? t('common.configured') : t('common.notConfigured')} />
+        <Info label={t('settings.aiProvider')} value={t('settings.geminiProvider')} />
+        <Info label={t('settings.geminiConfigured')} value={aiKey.status.configured || geminiConfigured ? t('common.configured') : t('common.notConfigured')} />
+        <Info label={t('settings.aiKeySource')} value={aiKey.status.configured ? t('settings.userKey') : geminiConfigured ? t('settings.platformFallback') : t('common.notConfigured')} />
+        <Info label={t('settings.model')} value={aiKey.status.model} />
+        <Info label={t('settings.lastKeyTest')} value={aiKey.status.last_tested_at || t('settings.notRecorded')} />
         <Info label={t('settings.exportCapability')} value={typeof Blob !== 'undefined' ? t('settings.available') : t('common.notConfigured')} />
         <Info label={t('settings.monitoringStatus')} value={isMonitoringConfigured ? t('common.configured') : t('common.notConfigured')} />
         <Info label={t('settings.productionSafeguards')} value={isProductionApp ? t('common.enabled') : t('settings.developmentMode')} />

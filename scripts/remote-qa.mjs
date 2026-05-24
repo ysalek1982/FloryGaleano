@@ -36,6 +36,8 @@ const requiredTables = [
   'shopping_list_items',
   'alerts',
   'app_settings',
+  'user_ai_settings',
+  'food_categories',
 ]
 
 const safeRecipeNames = [
@@ -427,10 +429,25 @@ async function testEdgeFunction() {
 
   const ping = await signed.client.functions.invoke('ai-chef', { body: { action: 'ping' } })
   assert(!ping.error, `ai-chef ping failed: ${ping.error?.message}`)
-  assert(ping.data?.gemini_configured === true, 'Gemini secret is not configured for ai-chef')
   assert(ping.data?.service_role_configured === true, 'Service role is not configured for ai-chef')
   assert(typeof ping.data?.model === 'string' && ping.data.model.length > 0, 'Gemini model was not returned')
   assertNoSecrets(ping.data)
+
+  const keyStatus = await signed.client.functions.invoke('ai-key-manager', { body: { action: 'get_status' } })
+  assert(!keyStatus.error, `ai-key-manager status failed: ${keyStatus.error?.message}`)
+  assert(keyStatus.data?.provider === 'gemini', 'ai-key-manager did not return Gemini metadata')
+  assert(!('encrypted_key' in keyStatus.data), 'ai-key-manager leaked encrypted_key')
+  assertNoSecrets(keyStatus.data)
+
+  if (process.env.GEMINI_API_KEY) {
+    const savedKey = await signed.client.functions.invoke('ai-key-manager', {
+      body: { action: 'save_key', api_key: process.env.GEMINI_API_KEY, model: process.env.GEMINI_MODEL || 'gemini-2.5-flash' },
+    })
+    assert(!savedKey.error, `ai-key-manager save failed: ${savedKey.error?.message}`)
+    assert(['valid', 'invalid', 'test_failed'].includes(savedKey.data?.key_status), 'Gemini BYOK key returned an unsupported status')
+    assert(savedKey.data?.key_last4 && !String(savedKey.data.key_last4).includes(process.env.GEMINI_API_KEY), 'ai-key-manager returned unsafe key metadata')
+    assertNoSecrets(savedKey.data)
+  }
 
   const ai = await signed.client.functions.invoke('ai-chef', {
     body: {
@@ -442,8 +459,9 @@ async function testEdgeFunction() {
   })
   assert(!ai.error, `ai-chef authenticated request failed: ${ai.error?.message}`)
   assert(ai.data && typeof ai.data === 'object', 'ai-chef did not return structured JSON')
+  assert(['user', 'platform_fallback', 'not_configured'].includes(ai.data.ai_key_source), 'ai-chef did not report safe key source')
   assert(Array.isArray(ai.data.suggestions), 'ai-chef response missing suggestions array')
-  assert(Array.isArray(ai.data.usable_suggestions), 'ai-chef response missing usable_suggestions array')
+  assert(Array.isArray(ai.data.usable_suggestions) || ai.data.code === 'gemini_key_missing', 'ai-chef response missing usable_suggestions array')
   for (const suggestion of ai.data.suggestions) {
     assert(['safe', 'review_needed', 'blocked'].includes(suggestion.safety_status), 'AI suggestion missing validated safety status')
     assert(typeof suggestion.usable === 'boolean', 'AI suggestion missing usable flag')
@@ -464,6 +482,11 @@ async function testEdgeFunction() {
   assert(Array.isArray(inventory.data.freezer_first_candidates), 'Inventory response missing freezer_first_candidates')
   assert(Array.isArray(inventory.data.purchase_priority), 'Inventory response missing purchase_priority')
   assertNoSecrets(inventory.data)
+  if (process.env.GEMINI_API_KEY) {
+    const deletedKey = await signed.client.functions.invoke('ai-key-manager', { body: { action: 'delete_key' } })
+    assert(!deletedKey.error, `ai-key-manager delete failed: ${deletedKey.error?.message}`)
+    assertNoSecrets(deletedKey.data)
+  }
   pass('ai-chef Edge Function verified')
 }
 

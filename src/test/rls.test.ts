@@ -33,6 +33,8 @@ describe('Supabase RLS migration', () => {
       'alerts',
       'app_settings',
       'family_users',
+      'user_ai_settings',
+      'food_categories',
     ]
 
     for (const table of tables) {
@@ -51,5 +53,7 @@ describe('Supabase RLS migration', () => {
     expect(migration).toContain("fu.role in ('chef','family_admin','viewer')")
     expect(migration).toContain('Avoid same-table helper lookups in family RLS policies')
     expect(migration).toContain('public.has_family_membership')
+    expect(migration).toContain('revoke all on public.user_ai_settings from anon, authenticated')
+    expect(migration).toContain('create policy food_categories_select')
   })
 })

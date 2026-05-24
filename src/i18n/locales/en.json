@@ -580,7 +580,13 @@
       "variety": "Improve Menu Variety",
       "translate": "Translate Recipe Instructions",
       "productionPlan": "Generate Chef Production Plan"
-    }
+    },
+    "keySetupTitle": "Gemini key required",
+    "keySetupBody": "Configure your Gemini API key in Settings to enable AI suggestions for this account.",
+    "goToSettings": "Go to Settings",
+    "usingUserGeminiKey": "Using your Gemini key",
+    "keyInvalidTitle": "Gemini key test failed",
+    "keyMissingCode": "Gemini API key is not configured."
   },
   "settings": {
     "title": "Settings",
@@ -645,6 +651,32 @@
       "not_checked": "Not checked",
       "healthy": "Healthy",
       "warning": "Needs attention"
+    },
+    "geminiByokDescription": "Connect your own Gemini API key. The key is encrypted server-side and never shown again.",
+    "geminiApiKey": "Gemini API key",
+    "pasteGeminiKey": "Paste your Gemini API key",
+    "replaceGeminiKey": "Paste a new key to replace the saved key",
+    "saveKey": "Save key",
+    "replaceKey": "Replace key",
+    "deleteKey": "Delete key",
+    "keyLast4": "Key ending",
+    "lastKeyTest": "Last key test",
+    "geminiKeySaved": "Gemini key saved and validated.",
+    "geminiKeyDeleted": "Gemini key deleted.",
+    "createGeminiKey": "Create your Gemini API key in Google AI Studio",
+    "geminiCostNotice": "Gemini usage and costs belong to your own Google account.",
+    "geminiKeySafetyNotice": "Never share API keys. Restrict the key in Google Cloud or API settings where possible.",
+    "aiProvider": "AI provider",
+    "geminiProvider": "Gemini",
+    "aiKeySource": "AI key source",
+    "userKey": "User key",
+    "platformFallback": "Platform fallback",
+    "aiKeyStatus": {
+      "not_configured": "Not configured",
+      "valid": "Valid",
+      "invalid": "Invalid",
+      "test_failed": "Test failed",
+      "deleted": "Deleted"
     }
   },
   "reports": {
@@ -811,5 +843,34 @@
     "ingredients": "Add ingredients with nutrition and allergen data.",
     "recipes": "Create a recipe with ingredient grams before planning menus.",
     "alerts": "No active alerts."
+  },
+  "foodCategories": {
+    "title": "Food Categories",
+    "searchLabel": "Food category",
+    "searchPlaceholder": "Search category, alias, or code",
+    "selected": "Selected category",
+    "empty": "No matching categories. Choose Other if nothing fits.",
+    "browserTitle": "Category browser",
+    "futureFoodData": "Nutrition database search coming later with USDA FoodData Central.",
+    "codes": {
+      "proteins": "Proteins",
+      "seafood": "Seafood",
+      "vegetables": "Vegetables",
+      "fruits": "Fruits",
+      "grains_starches": "Grains & Starches",
+      "gluten_free_bases": "Gluten-Free Bases",
+      "legumes": "Legumes",
+      "dairy_alternatives": "Dairy & Alternatives",
+      "fats_oils": "Fats & Oils",
+      "nuts_seeds": "Nuts & Seeds",
+      "herbs_spices": "Herbs & Spices",
+      "sauces_condiments": "Sauces & Condiments",
+      "beverages": "Beverages",
+      "bakery": "Bakery",
+      "snacks": "Snacks",
+      "processed_packaged": "Processed & Packaged",
+      "sweeteners": "Sweeteners",
+      "other": "Other"
+    }
   }
 }

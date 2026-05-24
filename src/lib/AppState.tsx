@@ -89,7 +89,8 @@ function readStoredData(): AppData {
   const stored = localStorage.getItem(DATA_KEY)
   if (!stored) return demoData
   try {
-    return JSON.parse(stored) as AppData
+    const parsed = JSON.parse(stored) as AppData
+    return { ...demoData, ...parsed, foodCategories: parsed.foodCategories || demoData.foodCategories }
   } catch {
     return demoData
   }
@@ -336,6 +337,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           name: input.name || 'New Ingredient',
           normalized_name: normalizeName(input.name || 'New Ingredient'),
           category: input.category || '',
+          category_id: input.category_id || undefined,
           default_unit: input.default_unit || 'g',
           calories_per_100g: Number(input.calories_per_100g ?? 0),
           protein_g_per_100g: Number(input.protein_g_per_100g ?? 0),

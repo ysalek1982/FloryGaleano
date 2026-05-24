@@ -1,11 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
 
 import { Button, Dialog, Field, FormSection } from '../../shared/chefUi'
 import { tagsToText, textToTags } from '../../shared/chefUtils'
 import type { Ingredient } from '../../../lib/types'
+import { FoodCategorySelect } from '../../food-categories/components/FoodCategorySelect'
+import { useFoodCategories } from '../../food-categories/hooks/useFoodCategories'
 
 export default function IngredientFormDialog({
   ingredient,
@@ -17,9 +19,12 @@ export default function IngredientFormDialog({
   onSubmit: (values: Partial<Ingredient>) => void
 }) {
   const { t } = useTranslation()
+  const { findByIdOrCode } = useFoodCategories()
+  const initialCategory = findByIdOrCode(ingredient?.category_id || ingredient?.category)
   const schema = z.object({
     name: z.string().min(1),
     category: z.string().optional(),
+    category_id: z.string().optional(),
     default_unit: z.string().min(1),
     source: z.enum(['manual', 'USDA', 'AI', 'imported']),
     calories_per_100g: z.coerce.number().min(0),
@@ -44,7 +49,8 @@ export default function IngredientFormDialog({
     resolver: zodResolver(schema),
     defaultValues: {
       name: ingredient?.name || '',
-      category: ingredient?.category || '',
+      category: initialCategory?.code || ingredient?.category || '',
+      category_id: initialCategory?.id || ingredient?.category_id || '',
       default_unit: ingredient?.default_unit || 'g',
       source: ingredient?.source || 'manual',
       calories_per_100g: ingredient?.calories_per_100g ?? 0,
@@ -66,12 +72,21 @@ export default function IngredientFormDialog({
       notes: ingredient?.notes || '',
     },
   })
+  const selectedCategoryId = useWatch({ control: form.control, name: 'category_id' })
   return (
     <Dialog title={ingredient ? t('ingredients.edit') : t('ingredients.create')} onClose={onClose} wide>
       <form className="grid gap-5" data-testid="ingredient-form" onSubmit={form.handleSubmit((values) => onSubmit({ ...values, allergen_tags: textToTags(values.allergen_tags), may_contain_tags: textToTags(values.may_contain_tags), allowed_exceptions: textToTags(values.allowed_exceptions), blocked_derivatives: textToTags(values.blocked_derivatives) }))}>
         <FormSection title={t('recipes.basicInfo')}>
           <Field label={t('recipes.name')} error={form.formState.errors.name?.message && t('validation.required')}><input className="input" {...form.register('name')} /></Field>
-          <Field label={t('common.category')}><input className="input" {...form.register('category')} /></Field>
+          <input type="hidden" {...form.register('category')} />
+          <input type="hidden" {...form.register('category_id')} />
+          <FoodCategorySelect
+            value={selectedCategoryId}
+            onChange={(category) => {
+              form.setValue('category_id', category.id, { shouldDirty: true })
+              form.setValue('category', category.code, { shouldDirty: true })
+            }}
+          />
           <Field label={t('ingredients.defaultUnit')}><input className="input" {...form.register('default_unit')} /></Field>
           <Field label={t('common.source')}><select className="input" {...form.register('source')}>{['manual', 'USDA', 'AI', 'imported'].map((item) => <option key={item} value={item}>{item}</option>)}</select></Field>
         </FormSection>

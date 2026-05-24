@@ -49,17 +49,9 @@ serve(async (req) => {
     const serviceRoleKey =
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ??
       Deno.env.get('APP_SUPABASE_SERVICE_ROLE_KEY')
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
+    const platformGeminiApiKey = Deno.env.get('GEMINI_API_KEY')
+    const platformFallbackEnabled = Deno.env.get('PLATFORM_GEMINI_FALLBACK_ENABLED') === 'true'
     const model = body?.model || Deno.env.get('GEMINI_MODEL') || 'gemini-2.5-flash'
-
-    if (action === 'ping') {
-      return json({
-        configured: Boolean(supabaseUrl && serviceRoleKey && geminiApiKey),
-        gemini_configured: Boolean(geminiApiKey),
-        service_role_configured: Boolean(serviceRoleKey),
-        model,
-      })
-    }
 
     if (!supabaseUrl || !serviceRoleKey) {
       return json({ error: 'Supabase service configuration is missing.' }, 500)
@@ -71,23 +63,52 @@ serve(async (req) => {
       auth: { persistSession: false, autoRefreshToken: false },
     })
     const { data: userData, error: userError } = await admin.auth.getUser(token)
+
+    if (action === 'ping') {
+      const userKey = userData.user ? await loadUserGeminiKey(admin, userData.user.id) : null
+      const hasPlatformFallback = platformFallbackEnabled && Boolean(platformGeminiApiKey)
+      return json({
+        configured: Boolean(supabaseUrl && serviceRoleKey && (userKey?.apiKey || hasPlatformFallback)),
+        gemini_configured: Boolean(userKey?.apiKey || hasPlatformFallback),
+        service_role_configured: Boolean(serviceRoleKey),
+        model: userKey?.model || model,
+        ai_provider: 'gemini',
+        ai_key_source: userKey?.apiKey ? 'user' : hasPlatformFallback ? 'platform_fallback' : 'not_configured',
+        ai_configured: Boolean(userKey?.apiKey || hasPlatformFallback),
+        key_last4: userKey?.keyLast4 || null,
+        last_tested_at: userKey?.lastTestedAt || null,
+      })
+    }
+
     if (userError || !userData.user) return json({ error: 'Unauthorized.' }, 401)
 
     const context = await loadFamilyContext(admin, userData.user.id, body?.family_id)
     if (!context.family) return json({ error: 'No accessible family context found.' }, 404)
     const inventoryForecast = calculateInventoryForecast(context)
+    const userKey = await loadUserGeminiKey(admin, userData.user.id)
+    const selectedKey = userKey?.apiKey
+      ? { apiKey: userKey.apiKey, source: 'user', model: userKey.model || model }
+      : platformFallbackEnabled && platformGeminiApiKey
+        ? { apiKey: platformGeminiApiKey, source: 'platform_fallback', model }
+        : null
 
-    if (!geminiApiKey) {
+    if (!selectedKey) {
       return json({
         configured: false,
         model,
         action,
+        ai_provider: 'gemini',
+        ai_key_source: 'not_configured',
+        ai_configured: false,
+        code: 'gemini_key_missing',
+        message: 'Gemini API key is not configured.',
+        suggested_action: 'Configure your Gemini API key in Settings.',
         context_summary: summarizeContext(context),
         inventory_forecast: inventoryAwareActions.has(action) ? inventoryForecast : undefined,
         suggestions: [],
         validation_summary: {
           status: 'review_needed',
-          reasons: ['Gemini is not configured in Supabase secrets.'],
+          reasons: ['Gemini API key is not configured for this user.'],
           warnings: [],
         },
         missing_ingredients: inventoryForecast.missing_ingredients,
@@ -96,7 +117,7 @@ serve(async (req) => {
         purchase_priority: inventoryForecast.purchase_priority,
         safety: {
           status: 'review_needed',
-          reason: 'Gemini is not configured in Supabase secrets.',
+          reason: 'Gemini API key is not configured for this user.',
         },
       })
     }
@@ -107,6 +128,8 @@ serve(async (req) => {
       'Never override allergy, trace, nutrition, or menu rotation safety rules.',
       'Use safe/review_needed/blocked statuses for every suggestion.',
       'If an ingredient is ambiguous, mark the suggestion review_needed.',
+      'Use only predefined food category codes from context.food_categories for new ingredients.',
+      'If no category fits, use category_code "other" and include a warning.',
       'Use the requested language for user-facing explanations.',
     ].join('\n')
 
@@ -126,6 +149,7 @@ serve(async (req) => {
             planned_date: 'YYYY-MM-DD | null',
             meal_time: 'breakfast | school_lunch | lunch | snack | sport_snack | dinner | evening_snack | null',
             ingredients: ['string'],
+            category_code: 'predefined food category code | other',
             nutrition: {
               calories: 'number | null',
               protein_g: 'number | null',
@@ -162,7 +186,7 @@ serve(async (req) => {
     })
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${selectedKey.model}:generateContent?key=${selectedKey.apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -179,11 +203,12 @@ serve(async (req) => {
     if (!response.ok) {
       return json(fallbackAiResponse({
         configured: true,
-        model,
+        model: selectedKey.model,
         action,
         context,
         inventoryForecast,
         reason: 'Gemini request failed.',
+        aiKeySource: selectedKey.source,
       }))
     }
 
@@ -195,19 +220,23 @@ serve(async (req) => {
     } catch {
       return json(fallbackAiResponse({
         configured: true,
-        model,
+        model: selectedKey.model,
         action,
         context,
         inventoryForecast,
         reason: 'Gemini returned invalid JSON.',
+        aiKeySource: selectedKey.source,
       }))
     }
     const validated = validateAiOutput(parsed, context, inventoryForecast, action)
     await createAiAlerts(admin, context, validated.suggestions)
     return json({
       configured: true,
-      model,
+      model: selectedKey.model,
       action,
+      ai_provider: 'gemini',
+      ai_key_source: selectedKey.source,
+      ai_configured: true,
       context_summary: summarizeContext(context),
       inventory_forecast: inventoryAwareActions.has(action) ? inventoryForecast : undefined,
       ...validated,
@@ -241,6 +270,7 @@ async function loadFamilyContext(admin: ReturnType<typeof createClient>, userId:
     { data: pantry },
     { data: freezer },
     { data: menuPlans },
+    { data: foodCategories },
   ] = await Promise.all([
     admin.from('families').select('*').eq('id', familyId).maybeSingle(),
     admin.from('family_members').select('*, allergies(*), dietary_restrictions(*), food_preferences(*)').eq('family_id', familyId),
@@ -250,6 +280,7 @@ async function loadFamilyContext(admin: ReturnType<typeof createClient>, userId:
     admin.from('pantry_inventory').select('*').eq('family_id', familyId),
     admin.from('freezer_inventory').select('*').eq('family_id', familyId),
     admin.from('menu_plans').select('*, menu_plan_items(*)').eq('family_id', familyId),
+    admin.from('food_categories').select('code, name_en, name_es, aliases_en, aliases_es, usda_category_hints').eq('is_active', true).order('sort_order'),
   ])
 
   return {
@@ -262,7 +293,29 @@ async function loadFamilyContext(admin: ReturnType<typeof createClient>, userId:
     recipe_ingredients: recipeIngredients || [],
     pantry: pantry || [],
     freezer: freezer || [],
+    food_categories: foodCategories || [],
     menu_history: (menuPlans || []).flatMap((plan: { menu_plan_items?: unknown[] }) => plan.menu_plan_items || []),
+  }
+}
+
+async function loadUserGeminiKey(admin: ReturnType<typeof createClient>, userId: string) {
+  const { data, error } = await admin
+    .from('user_ai_settings')
+    .select('model, is_enabled, encrypted_key, key_iv, key_last4, key_status, last_tested_at')
+    .eq('profile_id', userId)
+    .eq('provider', 'gemini')
+    .maybeSingle()
+  if (error || !data) return null
+  if (data.is_enabled !== true || data.key_status !== 'valid' || !data.encrypted_key || !data.key_iv) return null
+  try {
+    return {
+      apiKey: await decryptSecret(String(data.encrypted_key), String(data.key_iv)),
+      model: String(data.model || 'gemini-2.5-flash'),
+      keyLast4: data.key_last4 ? String(data.key_last4) : null,
+      lastTestedAt: data.last_tested_at ? String(data.last_tested_at) : null,
+    }
+  } catch {
+    return null
   }
 }
 
@@ -296,6 +349,7 @@ function validateAiOutput(
 ) {
   const allergies = Array.isArray(context.allergies) ? context.allergies as Array<Record<string, unknown>> : []
   const menuHistory = Array.isArray(context.menu_history) ? context.menu_history as Array<Record<string, unknown>> : []
+  const categoryCodes = new Set(arrayRecords(context.food_categories).map((category) => String(category.code)))
   const blockedTerms = allergies
     .flatMap((allergy) => [allergy.allergen_name, allergy.normalized_allergen_name])
     .filter(Boolean)
@@ -311,15 +365,20 @@ function validateAiOutput(
     const missingNutrition = !nutrition || nutrition.calories == null || nutrition.protein_g == null
     const existingStatus = String(suggestion.safety_status || 'review_needed')
     const inventoryValidation = validateInventorySuggestion(suggestion, inventoryForecast)
+    const categoryCode = String(suggestion.category_code || '')
+    const categoryWarning = categoryCode && !categoryCodes.has(categoryCode)
+      ? `Unknown category "${categoryCode}" mapped to other.`
+      : ''
     const safetyStatus = matched.length > 0
       ? 'blocked'
-      : rotation.status === 'blocked' || missingNutrition || inventoryValidation.status === 'review_needed'
+      : rotation.status === 'blocked' || missingNutrition || inventoryValidation.status === 'review_needed' || Boolean(categoryWarning)
         ? 'review_needed'
         : inventoryValidation.status === 'blocked'
           ? 'blocked'
         : existingStatus
     return {
       ...suggestion,
+      category_code: categoryWarning ? 'other' : suggestion.category_code,
       safety_status: safetyStatus,
       usable: safetyStatus === 'safe',
       rotation_status: rotation.status,
@@ -331,6 +390,7 @@ function validateAiOutput(
         ...(rotation.note ? [rotation.note] : []),
         ...(missingNutrition ? ['Nutrition data is incomplete.'] : []),
         ...inventoryValidation.notes,
+        ...(categoryWarning ? [categoryWarning] : []),
       ],
     }
   })
@@ -367,6 +427,7 @@ function fallbackAiResponse({
   context,
   inventoryForecast,
   reason,
+  aiKeySource = 'not_configured',
 }: {
   configured: boolean
   model: string
@@ -374,6 +435,7 @@ function fallbackAiResponse({
   context: Record<string, unknown>
   inventoryForecast: InventoryForecast
   reason: string
+  aiKeySource?: string
 }) {
   const fallback = {
     title: 'AI suggestion requires review',
@@ -397,6 +459,9 @@ function fallbackAiResponse({
     configured,
     model,
     action,
+    ai_provider: 'gemini',
+    ai_key_source: aiKeySource,
+    ai_configured: configured,
     context_summary: summarizeContext(context),
     inventory_forecast: inventoryAwareActions.has(action) ? inventoryForecast : undefined,
     suggestions: [fallback],
@@ -415,6 +480,28 @@ function fallbackAiResponse({
       reason,
     },
   }
+}
+
+async function decryptSecret(ciphertext: string, ivText: string) {
+  const key = await encryptionKey()
+  const decrypted = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: base64ToBytes(ivText) },
+    key,
+    base64ToBytes(ciphertext),
+  )
+  return new TextDecoder().decode(decrypted)
+}
+
+async function encryptionKey() {
+  const secret = Deno.env.get('APP_USER_SECRET_ENCRYPTION_KEY')
+  if (!secret || secret.length < 32) throw new Error('User key encryption secret is not configured.')
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(secret))
+  return crypto.subtle.importKey('raw', digest, 'AES-GCM', false, ['decrypt'])
+}
+
+function base64ToBytes(value: string) {
+  const binary = atob(value)
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0))
 }
 
 function validateRotation(suggestion: Record<string, unknown>, history: Array<Record<string, unknown>>) {

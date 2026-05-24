@@ -10,6 +10,7 @@ import type {
   Family,
   FamilyMember,
   FoodPreference,
+  FoodCategory,
   FreezerInventory,
   Ingredient,
   MenuPlan,
@@ -75,6 +76,7 @@ export async function fetchSupabaseAppData(profile: Profile): Promise<AppData> {
     allergies,
     dietaryRestrictions,
     foodPreferences,
+    foodCategories,
     ingredients,
     recipes,
     recipeIngredients,
@@ -91,6 +93,7 @@ export async function fetchSupabaseAppData(profile: Profile): Promise<AppData> {
     selectAll<Allergy>('allergies'),
     selectAll<DietaryRestriction>('dietary_restrictions'),
     selectAll<FoodPreference>('food_preferences'),
+    selectAll<FoodCategory>('food_categories', 'sort_order'),
     selectAll<Ingredient>('ingredients'),
     selectAll<Recipe>('recipes'),
     selectAll<RecipeIngredient>('recipe_ingredients'),
@@ -112,6 +115,7 @@ export async function fetchSupabaseAppData(profile: Profile): Promise<AppData> {
     allergies,
     dietaryRestrictions,
     foodPreferences,
+    foodCategories,
     ingredients,
     recipes,
     recipeIngredients,
@@ -126,9 +130,9 @@ export async function fetchSupabaseAppData(profile: Profile): Promise<AppData> {
   }
 }
 
-async function selectAll<T>(table: string): Promise<T[]> {
+async function selectAll<T>(table: string, orderColumn = 'created_at'): Promise<T[]> {
   if (!supabase) return []
-  const { data, error } = await supabase.from(table).select('*').order('created_at', { ascending: true })
+  const { data, error } = await supabase.from(table).select('*').order(orderColumn, { ascending: true })
   if (error) throw error
   return (data ?? []) as T[]
 }
