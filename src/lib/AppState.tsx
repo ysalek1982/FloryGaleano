@@ -33,6 +33,11 @@ import { normalizeName, uid } from './utils'
 const DATA_KEY = 'smart-family-meals:data'
 const AUTH_KEY = 'smart-family-meals:profile'
 
+function getAuthRedirectUrl(path = '/login') {
+  if (typeof window === 'undefined') return undefined
+  return `${window.location.origin}${path}`
+}
+
 interface AuthContextValue {
   profile: Profile | null
   isAuthenticated: boolean
@@ -176,7 +181,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const { error, data } = await supabase.auth.signUp({
             email,
             password,
-            options: { data: { full_name: fullName, preferred_language: i18n.language.startsWith('es') ? 'es' : 'en' } },
+            options: {
+              emailRedirectTo: getAuthRedirectUrl('/login'),
+              data: { full_name: fullName, preferred_language: i18n.language.startsWith('es') ? 'es' : 'en' },
+            },
           })
           if (error) throw error
           if (data.user) {
@@ -188,7 +196,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async forgotPassword(email) {
         if (isSupabaseConfigured && supabase) {
-          const { error } = await supabase.auth.resetPasswordForEmail(email)
+          const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: getAuthRedirectUrl('/login'),
+          })
           if (error) throw error
         }
       },
