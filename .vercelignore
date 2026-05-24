@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+node_modules
+dist
+dist-ssr
+artifacts
+test-results
+playwright-report
+*.log
+supabase/.branches
+supabase/.temp
+supabase/functions/.env

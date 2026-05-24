@@ -1,0 +1,105 @@
+name: Smart Family Meals CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      VITE_APP_ENV: ci
+      VITE_APP_VERSION: ${{ github.sha }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      APP_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.APP_SUPABASE_SERVICE_ROLE_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate environment when configured
+        shell: bash
+        run: |
+          if [[ -n "$VITE_SUPABASE_URL" && ( -n "$VITE_SUPABASE_PUBLISHABLE_KEY" || -n "$VITE_SUPABASE_ANON_KEY" ) ]]; then
+            npm run validate:env
+          else
+            echo "Skipping environment validation because frontend Supabase secrets are not configured."
+          fi
+
+      - name: Security scan
+        run: npm run security:scan
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Production dependency audit
+        run: npm audit --omit=dev
+
+      - name: Install Playwright browser
+        if: ${{ env.VITE_SUPABASE_URL != '' && (env.VITE_SUPABASE_PUBLISHABLE_KEY != '' || env.VITE_SUPABASE_ANON_KEY != '') && env.SUPABASE_SERVICE_ROLE_KEY != '' }}
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E tests
+        if: ${{ env.VITE_SUPABASE_URL != '' && (env.VITE_SUPABASE_PUBLISHABLE_KEY != '' || env.VITE_SUPABASE_ANON_KEY != '') && env.SUPABASE_SERVICE_ROLE_KEY != '' }}
+        run: npm run test:e2e
+
+      - name: Skip E2E tests
+        if: ${{ env.VITE_SUPABASE_URL == '' || (env.VITE_SUPABASE_PUBLISHABLE_KEY == '' && env.VITE_SUPABASE_ANON_KEY == '') || env.SUPABASE_SERVICE_ROLE_KEY == '' }}
+        run: echo "Skipping E2E tests because remote QA secrets are not configured."
+
+      - name: Remote RLS tests
+        if: ${{ env.VITE_SUPABASE_URL != '' && (env.VITE_SUPABASE_PUBLISHABLE_KEY != '' || env.VITE_SUPABASE_ANON_KEY != '') && env.SUPABASE_SERVICE_ROLE_KEY != '' }}
+        run: npm run test:rls
+
+      - name: Remote Supabase tests
+        if: ${{ env.VITE_SUPABASE_URL != '' && (env.VITE_SUPABASE_PUBLISHABLE_KEY != '' || env.VITE_SUPABASE_ANON_KEY != '') && env.SUPABASE_SERVICE_ROLE_KEY != '' }}
+        run: npm run test:supabase
+
+      - name: Smoke tests
+        if: ${{ env.VITE_SUPABASE_URL != '' && (env.VITE_SUPABASE_PUBLISHABLE_KEY != '' || env.VITE_SUPABASE_ANON_KEY != '') && env.SUPABASE_SERVICE_ROLE_KEY != '' }}
+        run: npm run smoke
+
+      - name: Skip remote tests
+        if: ${{ env.VITE_SUPABASE_URL == '' || (env.VITE_SUPABASE_PUBLISHABLE_KEY == '' && env.VITE_SUPABASE_ANON_KEY == '') || env.SUPABASE_SERVICE_ROLE_KEY == '' }}
+        run: echo "Skipping remote RLS/Supabase/smoke tests because remote QA secrets are not configured."
+
+      - name: Optional Vercel preview deploy
+        if: ${{ github.event_name == 'pull_request' && env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != '' }}
+        shell: bash
+        run: |
+          npm install -g vercel@39
+          vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+          vercel build --token="$VERCEL_TOKEN"
+          vercel deploy --prebuilt --token="$VERCEL_TOKEN"
+
+      - name: Skip Vercel preview deploy
+        if: ${{ github.event_name == 'pull_request' && (env.VERCEL_TOKEN == '' || env.VERCEL_ORG_ID == '' || env.VERCEL_PROJECT_ID == '') }}
+        run: echo "Skipping preview deploy because Vercel secrets are not configured."

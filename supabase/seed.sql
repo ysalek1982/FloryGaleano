@@ -1,0 +1,10 @@
+-- Smart Family Meals development seed entry point.
+--
+-- User-owned demo data is created by the authenticated RPC:
+--
+--   select public.seed_demo_workspace();
+--
+-- The RPC is defined in migrations so it can safely create the Galeano Family,
+-- diners, allergies, ingredients, recipes, pantry/freezer stock, menu plan, and
+-- shopping list for the signed-in user. This avoids inserting fake auth.users
+-- rows or committing credentials.

@@ -1,0 +1,90 @@
+import { useTranslation } from 'react-i18next'
+
+import { DayAiSuggestionsPanel } from '../../features/day-planner/components/DayAiSuggestionsPanel'
+import { DayAlertsPanel } from '../../features/day-planner/components/DayAlertsPanel'
+import { DayAllergySummary } from '../../features/day-planner/components/DayAllergySummary'
+import { DayMealTimeline } from '../../features/day-planner/components/DayMealTimeline'
+import { DayMissingIngredientsPanel } from '../../features/day-planner/components/DayMissingIngredientsPanel'
+import { DayNutritionSummary } from '../../features/day-planner/components/DayNutritionSummary'
+import { DayPlannerToolbar } from '../../features/day-planner/components/DayPlannerToolbar'
+import { DayPrintSummary } from '../../features/day-planner/components/DayPrintSummary'
+import { useDayMealActions } from '../../features/day-planner/hooks/useDayMealActions'
+import { type DayAiSuggestion, useDayPlannerState } from '../../features/day-planner/hooks/useDayPlannerState'
+import AddRecipeToSlotDialog from '../../features/menu-planner/components/AddRecipeToSlotDialog'
+import { Card, PageHeader } from '../../features/shared/chefUi'
+import { mealTimes } from '../../features/shared/chefUtils'
+import { useAppData } from '../../lib/AppState'
+
+export default function DayPlannerPage() {
+  const { t } = useTranslation()
+  const state = useDayPlannerState()
+  const { addRecipeToSlot, removeMenuPlanItem } = useDayMealActions()
+  const { data, addRecipe } = useAppData()
+
+  const applySuggestion = (suggestion: DayAiSuggestion) => {
+    if (suggestion.safety_status === 'blocked') return
+    if (suggestion.safety_status === 'review_needed' && !window.confirm(t('dayPlanner.confirmReviewSuggestion'))) return
+    const recipe = suggestion.recipe_id
+      ? data.recipes.find((candidate) => candidate.id === suggestion.recipe_id)
+      : data.recipes.find((candidate) => candidate.name === suggestion.title)
+    const recipeId = recipe?.id || addRecipe({
+      name: suggestion.title || t('recipes.create'),
+      family_id: state.familyId,
+      ai_generated: true,
+      status: 'draft',
+      servings: 4,
+      instructions: '',
+    }, [{ ingredient_id: data.ingredients[0]?.id, quantity_g: 100 }]).id
+    const mealTime = suggestion.meal_time || mealTimes.find((candidate) => !state.dayItems.some((item) => item.meal_time === candidate)) || 'dinner'
+    addRecipeToSlot({
+      familyId: state.familyId,
+      date: state.date,
+      mealTime,
+      recipeId,
+      dinerId: 'all',
+      overrideReason: suggestion.safety_status === 'review_needed' ? t('dayPlanner.confirmedReviewSuggestion') : undefined,
+      onError: state.setError,
+    })
+  }
+
+  return (
+    <>
+      <PageHeader title={t('nav.dayPlanner')} subtitle={t('dayPlanner.subtitle')} />
+      <div className="grid gap-5">
+        <DayPlannerToolbar state={state} />
+        {state.error && <Card className="border-danger-200 bg-danger-50 text-danger-800">{state.error}</Card>}
+        <DayPrintSummary state={state} />
+        <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+          <DayMealTimeline state={state} onRemove={removeMenuPlanItem} />
+          <div className="grid gap-5">
+            <DayNutritionSummary state={state} />
+            <DayAllergySummary state={state} />
+            <DayMissingIngredientsPanel state={state} />
+            <DayAlertsPanel state={state} />
+            <DayAiSuggestionsPanel state={state} onApply={applySuggestion} />
+          </div>
+        </div>
+      </div>
+      {state.slot && (
+        <AddRecipeToSlotDialog
+          familyId={state.familyId}
+          slot={state.slot}
+          plan={state.plan}
+          onClose={() => state.setSlot(null)}
+          onSubmit={({ recipeId, dinerId, overrideReason }) => {
+            addRecipeToSlot({
+              familyId: state.familyId,
+              date: state.slot?.date || state.date,
+              mealTime: state.slot?.mealTime || 'dinner',
+              recipeId,
+              dinerId,
+              overrideReason,
+              onError: state.setError,
+            })
+            state.setSlot(null)
+          }}
+        />
+      )}
+    </>
+  )
+}
