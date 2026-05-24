@@ -68,7 +68,19 @@ serve(async (req) => {
     }
 
     if (!test.ok) {
-      await upsertStatus(admin, userId, model, test.status, last4(apiKey), test.error, true)
+      if (test.keepForRetry) {
+        const encrypted = await encryptSecret(apiKey)
+        await upsertStoredKey(admin, userId, {
+          model,
+          isEnabled: false,
+          keyStatus: test.status,
+          keyLast4: last4(apiKey),
+          lastError: test.error,
+          encrypted,
+        })
+      } else {
+        await upsertStatus(admin, userId, model, test.status, last4(apiKey), test.error, true)
+      }
       return json(await getStatus(admin, userId))
     }
 
@@ -85,21 +97,14 @@ serve(async (req) => {
     }
 
     const encrypted = await encryptSecret(apiKey)
-    const { error } = await admin.from('user_ai_settings').upsert({
-      profile_id: userId,
-      provider: 'gemini',
+    await upsertStoredKey(admin, userId, {
       model,
-      is_enabled: true,
-      key_storage_method: 'encrypted',
-      vault_secret_id: null,
-      encrypted_key: encrypted.ciphertext,
-      key_iv: encrypted.iv,
-      key_last4: last4(apiKey),
-      key_status: 'valid',
-      last_error: null,
-      last_tested_at: new Date().toISOString(),
-    }, { onConflict: 'profile_id,provider' })
-    if (error) throw error
+      isEnabled: true,
+      keyStatus: 'valid',
+      keyLast4: last4(apiKey),
+      lastError: null,
+      encrypted,
+    })
     return json(await getStatus(admin, userId))
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : 'Unknown error' }, 500)
@@ -189,10 +194,69 @@ async function testGeminiKey(apiKey: string, model: string) {
     })
     if (response.ok) return { ok: true, status: 'valid', error: null }
     const status = response.status === 400 || response.status === 401 || response.status === 403 ? 'invalid' : 'test_failed'
-    return { ok: false, status, error: `Gemini test returned HTTP ${response.status}` }
+    const body = await response.json().catch(() => null)
+    return {
+      ok: false,
+      status,
+      keepForRetry: response.status === 429,
+      error: friendlyGeminiError(response.status, body, model),
+    }
   } catch {
-    return { ok: false, status: 'test_failed', error: 'Gemini test request failed.' }
+    return { ok: false, status: 'test_failed', keepForRetry: true, error: 'Gemini test request failed. Check your network and try again.' }
   }
+}
+
+async function upsertStoredKey(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  values: {
+    model: string
+    isEnabled: boolean
+    keyStatus: string
+    keyLast4: string
+    lastError: string | null
+    encrypted: { ciphertext: string; iv: string }
+  },
+) {
+  const { error } = await admin.from('user_ai_settings').upsert({
+    profile_id: userId,
+    provider: 'gemini',
+    model: values.model,
+    is_enabled: values.isEnabled,
+    key_storage_method: 'encrypted',
+    vault_secret_id: null,
+    encrypted_key: values.encrypted.ciphertext,
+    key_iv: values.encrypted.iv,
+    key_last4: values.keyLast4,
+    key_status: values.keyStatus,
+    last_error: values.lastError,
+    last_tested_at: new Date().toISOString(),
+  }, { onConflict: 'profile_id,provider' })
+  if (error) throw error
+}
+
+function friendlyGeminiError(status: number, body: unknown, model: string) {
+  if (status === 429) {
+    const retryDelay = extractRetryDelay(body)
+    return [
+      `Gemini quota or rate limit was reached for ${model} (HTTP 429).`,
+      retryDelay ? `Try again after ${retryDelay}.` : 'Wait a few minutes and test again.',
+      'You can also switch to Gemini 2.5 Flash-Lite or review quota and billing in Google AI Studio.',
+    ].join(' ')
+  }
+  if (status === 400) return `Gemini rejected the request for ${model}. Check that this model is available for your API key.`
+  if (status === 401 || status === 403) return 'Gemini rejected this API key. Check the key value, API restrictions, project, and billing access.'
+  if (status >= 500) return `Gemini is temporarily unavailable (HTTP ${status}). Try again later.`
+  return `Gemini test failed with HTTP ${status}.`
+}
+
+function extractRetryDelay(body: unknown) {
+  const details = (body as { error?: { details?: Array<Record<string, unknown>> } } | null)?.error?.details || []
+  for (const detail of details) {
+    const retryDelay = detail.retryDelay
+    if (typeof retryDelay === 'string' && retryDelay) return retryDelay
+  }
+  return ''
 }
 
 async function encryptSecret(secret: string) {

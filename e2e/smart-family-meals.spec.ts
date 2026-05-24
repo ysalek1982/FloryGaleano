@@ -391,11 +391,45 @@ test('Gemini invalid key state stays secret and guides repair', async ({ page })
   await page.goto('/app/settings')
   await page.getByTestId('settings-gemini-key').fill('fake-gemini-key-9999')
   await page.getByTestId('settings-ai-test').click()
-  await expect(page.getByTestId('settings-ai-result')).toContainText(/AI backend is not configured yet|Unable to reach the AI backend|AI backend connection failed/i)
+  await expect(page.getByTestId('settings-ai-result')).toContainText('Gemini test returned HTTP 403')
   await expect(page.getByText('fake-gemini-key-9999')).toHaveCount(0)
   await page.goto('/app/ai-chef')
   await expect(page.getByTestId('ai-key-invalid-card')).toContainText('Gemini key test failed')
   await expect(page.getByTestId('ai-replace-key')).toBeVisible()
+})
+
+test('Gemini quota limit explains HTTP 429 without exposing the key', async ({ page }) => {
+  let status = {
+    provider: 'gemini',
+    model: 'gemini-2.5-flash',
+    is_enabled: false,
+    configured: false,
+    key_status: 'not_configured',
+    key_last4: null as string | null,
+    last_tested_at: null as string | null,
+    last_error: null as string | null,
+  }
+  await page.route('**/functions/v1/ai-key-manager', async (route) => {
+    const body = JSON.parse(route.request().postData() || '{}')
+    if (body.action === 'save_key') {
+      status = {
+        ...status,
+        key_status: 'test_failed',
+        key_last4: '4290',
+        last_tested_at: new Date().toISOString(),
+        last_error: 'Gemini quota or rate limit was reached for gemini-2.5-flash (HTTP 429). Wait a few minutes and test again.',
+      }
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(status) })
+  })
+  await login(page)
+  await page.goto('/app/settings')
+  await page.getByTestId('settings-gemini-key').fill('fake-gemini-key-4290')
+  await page.getByTestId('settings-ai-save-key').click()
+  await expect(page.getByTestId('settings-ai-result')).toContainText('HTTP 429')
+  await expect(page.getByTestId('settings-gemini-quota-help')).toContainText('Gemini quota or rate limit reached')
+  await expect(page.getByText('fake-gemini-key-4290')).toHaveCount(0)
+  await expect(page.getByText('**** 4290')).toBeVisible()
 })
 
 test('Gemini key delete returns AI Chef to setup state', async ({ page }) => {
@@ -616,7 +650,7 @@ test('settings exposes AI and security status without secrets', async ({ page })
   await expect(page.getByText('Secrets are not displayed in the application.')).toBeVisible()
   await page.getByTestId('settings-gemini-key').fill('invalid-test-key-1234')
   await page.getByTestId('settings-ai-test').click()
-  await expect(page.getByTestId('settings-ai-result')).toContainText(/AI backend is not configured yet|Unable to reach the AI backend|AI backend connection failed/i)
+  await expect(page.getByTestId('settings-ai-result')).toContainText(/Gemini test returned HTTP 400|AI backend is not configured yet|Unable to reach the AI backend|AI backend connection failed/i)
   await expect(page.getByText('invalid-test-key-1234')).toHaveCount(0)
   await page.getByTestId('runtime-health-check').click()
   await expect(page.getByTestId('runtime-health-panel')).toContainText(/Healthy|Needs attention|Not checked/)

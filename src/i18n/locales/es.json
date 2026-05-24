@@ -670,6 +670,8 @@
     "geminiCostNotice": "El uso y los costos de Gemini pertenecen a tu propia cuenta de Google.",
     "geminiEncryptedNotice": "Tu clave se cifra y se usa solo desde la función de IA del servidor.",
     "geminiKeySafetyNotice": "Nunca compartas claves API. Restringe la clave en Google Cloud o configuración de API cuando sea posible.",
+    "geminiQuotaTitle": "Cuota o límite de Gemini alcanzado",
+    "geminiQuotaBody": "HTTP 429 normalmente significa que la clave fue reconocida, pero el modelo seleccionado no tiene cuota disponible en este momento. Espera y prueba de nuevo, usa Gemini 2.5 Flash-Lite o revisa cuota y facturación en Google AI Studio.",
     "aiProvider": "Proveedor de IA",
     "geminiProvider": "Gemini",
     "aiKeySource": "Origen de clave IA",

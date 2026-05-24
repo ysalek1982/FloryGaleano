@@ -670,6 +670,8 @@
     "geminiCostNotice": "Gemini usage and costs belong to your own Google account.",
     "geminiEncryptedNotice": "Your key is encrypted and used only from the server-side AI function.",
     "geminiKeySafetyNotice": "Never share API keys. Restrict the key in Google Cloud or API settings where possible.",
+    "geminiQuotaTitle": "Gemini quota or rate limit reached",
+    "geminiQuotaBody": "HTTP 429 usually means the key is recognized but the selected model has no available quota right now. Wait and test again, try Gemini 2.5 Flash-Lite, or review quota and billing in Google AI Studio.",
     "aiProvider": "AI provider",
     "geminiProvider": "Gemini",
     "aiKeySource": "AI key source",

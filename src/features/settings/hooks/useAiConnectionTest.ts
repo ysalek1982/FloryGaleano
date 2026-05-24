@@ -58,7 +58,7 @@ export function useAiConnectionTest() {
     setTesting(true)
     try {
       const next = await invoke({ action: 'test_key', api_key: apiKey, model })
-      setMessage(next.key_status === 'valid' ? t('settings.connectionSuccess') : t('settings.connectionFailure'))
+      setMessage(next.key_status === 'valid' ? t('settings.connectionSuccess') : next.last_error || t('settings.connectionFailure'))
       return next
     } catch {
       setMessage(t('settings.connectionFailure'))
@@ -72,7 +72,7 @@ export function useAiConnectionTest() {
     setTesting(true)
     try {
       const next = await invoke({ action: 'save_key', api_key: apiKey, model })
-      setMessage(next.key_status === 'valid' ? t('settings.geminiKeySaved') : t('settings.connectionFailure'))
+      setMessage(next.key_status === 'valid' ? t('settings.geminiKeySaved') : next.last_error || t('settings.connectionFailure'))
       return next
     } catch {
       setMessage(t('settings.connectionFailure'))

@@ -8,13 +8,15 @@ import type { useSettingsForm } from '../hooks/useSettingsForm'
 
 type SettingsForm = ReturnType<typeof useSettingsForm>
 
-const modelOptions = ['gemini-2.5-flash', 'gemini-2.5-pro']
+const modelOptions = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro']
 
 export function AiSettingsPanel({ settings }: { settings: SettingsForm }) {
   const { t } = useTranslation()
   const ai = useAiConnectionTest()
   const [apiKey, setApiKey] = useState('')
   const [model, setModel] = useState(settings.settings.ai_model || 'gemini-2.5-flash')
+  const hasQuotaIssue = /429|quota|rate limit/i.test(`${ai.message} ${ai.status.last_error || ''}`)
+  const hasStoredKeyMetadata = Boolean(ai.status.key_last4)
 
   const clearKey = () => setApiKey('')
 
@@ -79,7 +81,7 @@ export function AiSettingsPanel({ settings }: { settings: SettingsForm }) {
               await ai.testConnection(apiKey || undefined, model)
               clearKey()
             }}
-            disabled={ai.testing || (!apiKey.trim() && !ai.status.configured)}
+            disabled={ai.testing || (!apiKey.trim() && !hasStoredKeyMetadata)}
             data-testid="settings-ai-test"
           >
             {ai.testing ? t('common.loading') : t('ai.testConnection')}
@@ -91,7 +93,7 @@ export function AiSettingsPanel({ settings }: { settings: SettingsForm }) {
               clearKey()
               settings.updateSettings({ gemini_enabled: false })
             }}
-            disabled={ai.testing || !ai.status.configured}
+            disabled={ai.testing || !hasStoredKeyMetadata}
             data-testid="settings-ai-delete-key"
           >
             <Trash2 className="h-4 w-4" />
@@ -100,6 +102,12 @@ export function AiSettingsPanel({ settings }: { settings: SettingsForm }) {
         </div>
         {ai.message && <p className="rounded-md bg-stone-50 p-3 text-sm text-slate-700" data-testid="settings-ai-result">{ai.message}</p>}
         {ai.status.last_error && <p className="rounded-md bg-amber-50 p-3 text-sm text-amber-800">{ai.status.last_error}</p>}
+        {hasQuotaIssue && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" data-testid="settings-gemini-quota-help">
+            <p className="font-semibold">{t('settings.geminiQuotaTitle')}</p>
+            <p className="mt-1">{t('settings.geminiQuotaBody')}</p>
+          </div>
+        )}
         <div className="rounded-lg border border-ai-100 bg-ai-50 p-3 text-sm text-ai-900">
           <a className="inline-flex items-center gap-2 font-semibold underline" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">
             {t('settings.createGeminiKey')} <ExternalLink className="h-4 w-4" />
