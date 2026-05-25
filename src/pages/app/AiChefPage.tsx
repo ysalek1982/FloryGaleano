@@ -38,6 +38,7 @@ export default function AiChefPage() {
   }
   const keyNeedsSetup = !aiStatus.status.configured && ['not_configured', 'deleted'].includes(aiStatus.status.key_status)
   const keyNeedsRepair = !aiStatus.status.configured && ['invalid', 'test_failed'].includes(aiStatus.status.key_status)
+  const keyRateLimited = aiStatus.status.key_status === 'rate_limited'
 
   const runAction = async (actionKey: string) => {
     setLoading(true)
@@ -105,6 +106,24 @@ export default function AiChefPage() {
               </div>
             </div>
           )}
+          {keyRateLimited && (
+            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4" data-testid="ai-key-rate-limited-card">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-serif text-xl font-semibold">{t('ai.keyRateLimitedTitle')}</h2>
+                <Badge status="warning">{t('settings.aiKeyStatus.rate_limited')}</Badge>
+              </div>
+              <p className="mt-2 text-sm text-amber-900">{t('ai.keyRateLimitedBody')}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button variant="secondary" onClick={() => void aiStatus.testConnection(undefined, aiStatus.status.model)} disabled={aiStatus.testing} data-testid="ai-test-rate-limited">
+                  {aiStatus.testing ? t('common.loading') : t('settings.testAgain')}
+                </Button>
+                <Button variant="ai" onClick={() => navigate('/app/settings')} data-testid="ai-change-model">
+                  <Settings className="h-4 w-4" />
+                  {t('settings.changeModel')}
+                </Button>
+              </div>
+            </div>
+          )}
           {aiStatus.status.configured && (
             <p className="mb-4 rounded-lg border border-forest-100 bg-forest-50 p-3 text-sm font-semibold text-forest-800" data-testid="ai-key-source">
               {t('ai.usingUserGeminiKey')} - {aiStatus.status.model}
@@ -117,7 +136,7 @@ export default function AiChefPage() {
             <textarea className="input min-h-32" placeholder={t('ai.chatPlaceholder')} value={prompt} onChange={(event) => setPrompt(event.target.value)} />
           </div>
           <div className="mt-4 grid gap-2">
-            {actions.map(([key, label]) => <Button key={key} variant="ai" disabled={loading || !aiStatus.status.configured} onClick={() => runAction(key)} data-testid={`ai-action-${key}`}><Brain className="h-4 w-4" />{label}</Button>)}
+            {actions.map(([key, label]) => <Button key={key} variant="ai" disabled={loading || (!aiStatus.status.configured && !keyRateLimited)} onClick={() => runAction(key)} data-testid={`ai-action-${key}`}><Brain className="h-4 w-4" />{label}</Button>)}
           </div>
         </Card>
         <div className="grid gap-5">

@@ -587,6 +587,8 @@
     "usingUserGeminiKey": "Usando tu clave Gemini",
     "keyInvalidTitle": "La prueba de clave Gemini falló",
     "keyInvalidBody": "La clave Gemini guardada es inválida o no pudo probarse. Prueba de nuevo o reemplázala en Ajustes.",
+    "keyRateLimitedTitle": "La cuota de Gemini está limitada temporalmente",
+    "keyRateLimitedBody": "Tu clave guardada parece utilizable, pero Gemini tiene cuota o límites activos. Espera, prueba de nuevo o cambia a un modelo más liviano en Ajustes.",
     "keyMissingCode": "La clave API de Gemini no está configurada."
   },
   "settings": {
@@ -661,6 +663,10 @@
     "replaceKey": "Reemplazar clave",
     "deleteKey": "Eliminar clave",
     "testAgain": "Probar de nuevo",
+    "changeModel": "Cambiar modelo",
+    "refreshModels": "Actualizar modelos disponibles",
+    "retryAfter": "Reintentar después de",
+    "retryLater": "Reintentar más tarde",
     "keySecurity": "Seguridad de la clave",
     "keyLast4": "Terminación de clave",
     "lastKeyTest": "Última prueba de clave",
@@ -682,6 +688,7 @@
       "valid": "Válida",
       "invalid": "Inválida",
       "test_failed": "Prueba fallida",
+      "rate_limited": "Límite de cuota",
       "deleted": "Eliminada"
     }
   },

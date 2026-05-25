@@ -1,4 +1,4 @@
-import { ExternalLink, KeyRound, Trash2 } from 'lucide-react'
+import { ExternalLink, KeyRound, RefreshCw, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -15,8 +15,10 @@ export function AiSettingsPanel({ settings }: { settings: SettingsForm }) {
   const ai = useAiConnectionTest()
   const [apiKey, setApiKey] = useState('')
   const [model, setModel] = useState(settings.settings.ai_model || 'gemini-2.5-flash')
+  const [availableModels, setAvailableModels] = useState(modelOptions)
   const hasQuotaIssue = /429|quota|rate limit/i.test(`${ai.message} ${ai.status.last_error || ''}`)
   const hasStoredKeyMetadata = Boolean(ai.status.key_last4)
+  const isRateLimited = ai.status.key_status === 'rate_limited'
 
   const clearKey = () => setApiKey('')
 
@@ -27,7 +29,7 @@ export function AiSettingsPanel({ settings }: { settings: SettingsForm }) {
           <h2 className="font-serif text-2xl font-semibold">{t('settings.aiPanel')}</h2>
           <p className="mt-1 text-sm text-slate-600">{t('settings.geminiByokDescription')}</p>
         </div>
-        <Badge status={ai.status.key_status === 'valid' ? 'safe' : ai.status.key_status === 'not_configured' || ai.status.key_status === 'deleted' ? undefined : 'warning'}>
+        <Badge status={ai.status.key_status === 'valid' ? 'safe' : ai.status.key_status === 'invalid' ? 'blocked' : ai.status.key_status === 'not_configured' || ai.status.key_status === 'deleted' ? undefined : 'warning'}>
           {t(`settings.aiKeyStatus.${ai.status.key_status}`)}
         </Badge>
       </div>
@@ -47,7 +49,7 @@ export function AiSettingsPanel({ settings }: { settings: SettingsForm }) {
             }}
             data-testid="settings-ai-model"
           >
-            {modelOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+            {availableModels.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
         </Field>
         <Field label={t('settings.geminiApiKey')}>
@@ -100,12 +102,30 @@ export function AiSettingsPanel({ settings }: { settings: SettingsForm }) {
             {t('settings.deleteKey')}
           </Button>
         </div>
+        <Button
+          variant="secondary"
+          onClick={async () => {
+            const models = await ai.listModels(apiKey || undefined, model)
+            if (models.length) setAvailableModels(Array.from(new Set([...models, ...modelOptions])))
+            clearKey()
+          }}
+          disabled={ai.testing || (!apiKey.trim() && !hasStoredKeyMetadata)}
+          data-testid="settings-refresh-models"
+        >
+          <RefreshCw className="h-4 w-4" />
+          {t('settings.refreshModels')}
+        </Button>
         {ai.message && <p className="rounded-md bg-stone-50 p-3 text-sm text-slate-700" data-testid="settings-ai-result">{ai.message}</p>}
         {ai.status.last_error && <p className="rounded-md bg-amber-50 p-3 text-sm text-amber-800">{ai.status.last_error}</p>}
-        {hasQuotaIssue && (
+        {(hasQuotaIssue || isRateLimited) && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" data-testid="settings-gemini-quota-help">
             <p className="font-semibold">{t('settings.geminiQuotaTitle')}</p>
             <p className="mt-1">{t('settings.geminiQuotaBody')}</p>
+            {isRateLimited && (
+              <p className="mt-2 font-medium" data-testid="settings-gemini-retry-after">
+                {t('settings.retryAfter')}: {ai.status.retry_after_seconds ? `${ai.status.retry_after_seconds}s` : t('settings.retryLater')}
+              </p>
+            )}
           </div>
         )}
         <div className="rounded-lg border border-ai-100 bg-ai-50 p-3 text-sm text-ai-900">

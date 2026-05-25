@@ -8,10 +8,12 @@ export interface AiKeyStatus {
   model: string
   is_enabled: boolean
   configured: boolean
-  key_status: 'not_configured' | 'valid' | 'invalid' | 'test_failed' | 'deleted'
+  key_status: 'not_configured' | 'valid' | 'invalid' | 'test_failed' | 'rate_limited' | 'deleted'
   key_last4: string | null
   last_tested_at: string | null
   last_error: string | null
+  last_rate_limited_at?: string | null
+  retry_after_seconds?: number | null
 }
 
 const emptyStatus: AiKeyStatus = {
@@ -31,11 +33,11 @@ export function useAiConnectionTest() {
   const [message, setMessage] = useState('')
   const [testing, setTesting] = useState(false)
 
-  const invoke = useCallback(async (body: Record<string, unknown>) => {
+  const invoke = useCallback(async (body: Record<string, unknown>, updateStatus = true) => {
     if (!isSupabaseConfigured || !supabase) throw new Error('Supabase is not configured')
     const { data, error } = await supabase.functions.invoke('ai-key-manager', { body })
     if (error) throw error
-    setStatus({ ...emptyStatus, ...(data as Partial<AiKeyStatus>) })
+    if (updateStatus) setStatus({ ...emptyStatus, ...(data as Partial<AiKeyStatus>) })
     return data as AiKeyStatus
   }, [])
 
@@ -96,5 +98,20 @@ export function useAiConnectionTest() {
     }
   }
 
-  return { message, testing, status, refresh, testConnection, saveKey, deleteKey }
+  const listModels = async (apiKey?: string, model = status.model) => {
+    setTesting(true)
+    try {
+      const data = await invoke({ action: 'list_models', api_key: apiKey, model }, false) as unknown as { models?: string[]; status?: AiKeyStatus; error?: string }
+      if (data.status) setStatus({ ...emptyStatus, ...data.status })
+      if (data.error) setMessage(data.error)
+      return Array.isArray(data.models) ? data.models : []
+    } catch {
+      setMessage(t('settings.connectionFailure'))
+      return []
+    } finally {
+      setTesting(false)
+    }
+  }
+
+  return { message, testing, status, refresh, testConnection, saveKey, deleteKey, listModels }
 }

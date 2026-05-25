@@ -25,6 +25,18 @@ Production app: `https://smart-family-meals.vercel.app`
 17. Open `AI Chef` again.
 18. Confirm it returns a setup-needed `review_needed` state instead of a generic error.
 
+## Rate Limit Validation
+
+HTTP 429 means Gemini quota or rate limits were reached. It must not be treated as an invalid key.
+
+1. Save or test a key that returns HTTP 429.
+2. Confirm `Settings` shows `rate_limited` or a quota/rate-limit explanation.
+3. Confirm the full key is not visible.
+4. Confirm only the last 4 characters are shown.
+5. Confirm the key can be tested again without pasting it again.
+6. Confirm `AI Chef` returns structured `review_needed` JSON with `code: gemini_rate_limited`.
+7. Confirm the user is guided to wait, retry, or switch to Gemini 2.5 Flash-Lite.
+
 ## Expected Security Behavior
 
 - The full Gemini key is never shown after save or test.

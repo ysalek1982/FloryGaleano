@@ -444,7 +444,7 @@ async function testEdgeFunction() {
       body: { action: 'save_key', api_key: process.env.GEMINI_API_KEY, model: process.env.GEMINI_MODEL || 'gemini-2.5-flash' },
     })
     assert(!savedKey.error, `ai-key-manager save failed: ${savedKey.error?.message}`)
-    assert(['valid', 'invalid', 'test_failed'].includes(savedKey.data?.key_status), 'Gemini BYOK key returned an unsupported status')
+    assert(['valid', 'invalid', 'test_failed', 'rate_limited'].includes(savedKey.data?.key_status), 'Gemini BYOK key returned an unsupported status')
     assert(savedKey.data?.key_last4 && !String(savedKey.data.key_last4).includes(process.env.GEMINI_API_KEY), 'ai-key-manager returned unsafe key metadata')
     assertNoSecrets(savedKey.data)
   }

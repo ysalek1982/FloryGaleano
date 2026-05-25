@@ -34,6 +34,12 @@ for (const file of files) {
   if (isFrontend && /\b(encrypted_key|key_iv|vault_secret_id)\b/.test(source)) {
     findings.push(`Frontend must not select or render raw AI key storage fields in ${file}`)
   }
+  if (file === 'supabase/functions/ai-chef/index.ts') {
+    const unsafeRecipeIngredientLoad = /from\('recipe_ingredients'\)\.select\('\*'\)(?![\s\S]{0,120}\.in\('recipe_id')/.test(source)
+    if (unsafeRecipeIngredientLoad) {
+      findings.push('ai-chef must filter recipe_ingredients by accessible recipe IDs')
+    }
+  }
 }
 
 if (findings.length) {

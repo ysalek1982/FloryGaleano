@@ -11,6 +11,7 @@ Smart Family Meals currently uses a BYOK model for Gemini. Each authenticated us
 - Valid keys are encrypted in the Edge Function using AES-GCM.
 - The encrypted key and IV are stored in `user_ai_settings`.
 - The UI receives only metadata: provider, model, status, last test time, and last 4 characters.
+- HTTP 429 quota/rate-limit responses are stored as `rate_limited`, not `invalid`; the encrypted key remains retryable and only retry metadata is exposed.
 
 ## Required Secret
 

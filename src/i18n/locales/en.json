@@ -587,6 +587,8 @@
     "usingUserGeminiKey": "Using your Gemini key",
     "keyInvalidTitle": "Gemini key test failed",
     "keyInvalidBody": "The saved Gemini key is invalid or could not be tested. Test it again or replace it in Settings.",
+    "keyRateLimitedTitle": "Gemini quota is temporarily limited",
+    "keyRateLimitedBody": "Your saved key appears usable, but Gemini quota or rate limits are active. Wait, test again, or switch to a lighter model in Settings.",
     "keyMissingCode": "Gemini API key is not configured."
   },
   "settings": {
@@ -661,6 +663,10 @@
     "replaceKey": "Replace key",
     "deleteKey": "Delete key",
     "testAgain": "Test again",
+    "changeModel": "Change model",
+    "refreshModels": "Refresh available models",
+    "retryAfter": "Retry after",
+    "retryLater": "Retry later",
     "keySecurity": "Key security",
     "keyLast4": "Key ending",
     "lastKeyTest": "Last key test",
@@ -682,6 +688,7 @@
       "valid": "Valid",
       "invalid": "Invalid",
       "test_failed": "Test failed",
+      "rate_limited": "Rate limited",
       "deleted": "Deleted"
     }
   },

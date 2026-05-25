@@ -339,6 +339,69 @@ test('AI Chef renders structured validated suggestions without applying unsafe o
   await expect(page.getByRole('button', { name: /Apply Safe Suggestion/i }).nth(1)).toBeDisabled()
 })
 
+test('AI Chef renders validated weekly menu grid from structured output', async ({ page }) => {
+  await mockAiKeyConfigured(page)
+  await page.route('**/functions/v1/ai-chef', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        configured: true,
+        action: 'generate_validated_menu_plan',
+        ai_key_source: 'user',
+        candidate_recipe_count: 12,
+        menu_plan: {
+          title: 'Validated Week Draft',
+          start_date: '2026-05-25',
+          end_date: '2026-05-31',
+          days: [
+            {
+              date: '2026-05-25',
+              meals: [
+                {
+                  meal_time: 'dinner',
+                  recipe_id: 'recipe-safe',
+                  recipe_name: 'Safe Rice Bowl',
+                  servings: 3,
+                  diner_ids: ['all'],
+                  reason: 'Candidate recipe passed server validation.',
+                  category_codes: ['proteins'],
+                  status: 'safe',
+                  warnings: [],
+                },
+                {
+                  meal_time: 'snack',
+                  recipe_id: null,
+                  recipe_name: 'New Lentil Idea',
+                  servings: 1,
+                  diner_ids: ['all'],
+                  reason: 'New recipe suggestion only.',
+                  category_codes: ['legumes'],
+                  status: 'review_needed',
+                  warnings: ['AI did not provide an existing recipe_id; treat as draft.'],
+                },
+              ],
+            },
+          ],
+        },
+        suggestions: [
+          { title: 'Safe Rice Bowl', recipe_id: 'recipe-safe', safety_status: 'safe', usable: true, rotation_status: 'allowed', nutrition_status: 'available' },
+          { title: 'New Lentil Idea', recipe_id: null, safety_status: 'review_needed', usable: false, rotation_status: 'review_needed', nutrition_status: 'review_needed' },
+        ],
+        validation_summary: { status: 'review_needed', reasons: ['12 candidate recipes considered before Gemini was called.'], warnings: [] },
+      }),
+    })
+  })
+
+  await login(page)
+  await page.goto('/app/ai-chef')
+  await page.getByTestId('ai-action-weeklyMenu').click()
+  await expect(page.getByTestId('ai-menu-plan-grid')).toContainText('Validated Week Draft')
+  await expect(page.getByTestId('ai-menu-plan-grid')).toContainText('dinner: Safe Rice Bowl')
+  await expect(page.getByTestId('ai-menu-plan-grid')).toContainText('review_needed')
+  await expect(page.getByRole('button', { name: /Apply Safe Suggestion/i }).nth(1)).toBeDisabled()
+})
+
 test('AI Chef shows Gemini setup when user key is missing', async ({ page }) => {
   await page.route('**/functions/v1/ai-key-manager', async (route) => {
     await route.fulfill({
@@ -414,9 +477,10 @@ test('Gemini quota limit explains HTTP 429 without exposing the key', async ({ p
     if (body.action === 'save_key') {
       status = {
         ...status,
-        key_status: 'test_failed',
+        key_status: 'rate_limited',
         key_last4: '4290',
         last_tested_at: new Date().toISOString(),
+        retry_after_seconds: 120,
         last_error: 'Gemini quota or rate limit was reached for gemini-2.5-flash (HTTP 429). Wait a few minutes and test again.',
       }
     }
@@ -428,8 +492,49 @@ test('Gemini quota limit explains HTTP 429 without exposing the key', async ({ p
   await page.getByTestId('settings-ai-save-key').click()
   await expect(page.getByTestId('settings-ai-result')).toContainText('HTTP 429')
   await expect(page.getByTestId('settings-gemini-quota-help')).toContainText('Gemini quota or rate limit reached')
+  await expect(page.getByTestId('settings-gemini-retry-after')).toContainText('120s')
   await expect(page.getByText('fake-gemini-key-4290')).toHaveCount(0)
   await expect(page.getByText('**** 4290')).toBeVisible()
+})
+
+test('AI Chef explains Gemini rate limit as retryable review state', async ({ page }) => {
+  await page.route('**/functions/v1/ai-key-manager', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        is_enabled: true,
+        configured: false,
+        key_status: 'rate_limited',
+        key_last4: '4290',
+        last_tested_at: new Date().toISOString(),
+        last_rate_limited_at: new Date().toISOString(),
+        retry_after_seconds: 90,
+        last_error: 'Gemini quota or rate limit was reached for gemini-2.5-flash (HTTP 429).',
+      }),
+    })
+  })
+  await page.route('**/functions/v1/ai-chef', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        configured: false,
+        code: 'gemini_rate_limited',
+        message: 'Gemini quota or rate limit was reached for gemini-2.5-flash (HTTP 429).',
+        suggested_action: 'Wait for quota to reset or switch model in Settings.',
+        validation_summary: { status: 'review_needed', reasons: ['Gemini quota reached.'], warnings: ['Retry after 90 seconds.'] },
+        suggestions: [],
+      }),
+    })
+  })
+  await login(page)
+  await page.goto('/app/ai-chef')
+  await expect(page.getByTestId('ai-key-rate-limited-card')).toContainText('Gemini quota is temporarily limited')
+  await page.getByTestId('ai-action-weeklyMenu').click()
+  await expect(page.getByTestId('ai-rate-limited-result')).toContainText('HTTP 429')
 })
 
 test('Gemini key delete returns AI Chef to setup state', async ({ page }) => {
@@ -650,7 +755,7 @@ test('settings exposes AI and security status without secrets', async ({ page })
   await expect(page.getByText('Secrets are not displayed in the application.')).toBeVisible()
   await page.getByTestId('settings-gemini-key').fill('invalid-test-key-1234')
   await page.getByTestId('settings-ai-test').click()
-  await expect(page.getByTestId('settings-ai-result')).toContainText(/Gemini test returned HTTP 400|AI backend is not configured yet|Unable to reach the AI backend|AI backend connection failed/i)
+  await expect(page.getByTestId('settings-ai-result')).toContainText(/Gemini test returned HTTP 400|Gemini rejected the request|AI backend is not configured yet|Unable to reach the AI backend|AI backend connection failed/i)
   await expect(page.getByText('invalid-test-key-1234')).toHaveCount(0)
   await page.getByTestId('runtime-health-check').click()
   await expect(page.getByTestId('runtime-health-panel')).toContainText(/Healthy|Needs attention|Not checked/)

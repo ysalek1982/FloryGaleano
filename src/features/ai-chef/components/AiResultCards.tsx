@@ -23,6 +23,7 @@ export default function AiResultCards({
   const expiringItems = toRows(result?.expiring_items)
   const freezerFirstCandidates = toRows(result?.freezer_first_candidates)
   const purchasePriority = toRows(result?.purchase_priority)
+  const menuPlan = result?.menu_plan as Record<string, unknown> | undefined
   const warnings = Array.isArray(validationSummary?.warnings) ? validationSummary.warnings.map(String) : []
   const reasons = Array.isArray(validationSummary?.reasons) ? validationSummary.reasons.map(String) : []
   return (
@@ -30,6 +31,13 @@ export default function AiResultCards({
       <h2 className="font-serif text-2xl font-semibold">{t('ai.safetyResult')}</h2>
       {loading && <SkeletonBlock />}
       {message && <p className="mt-3 rounded-md bg-stone-50 p-3 text-sm text-slate-700">{message}</p>}
+      {result?.code === 'gemini_rate_limited' && (
+        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" data-testid="ai-rate-limited-result">
+          <p className="font-semibold">{String(result.message || t('settings.geminiQuotaTitle'))}</p>
+          <p className="mt-1">{String(result.suggested_action || t('settings.geminiQuotaBody'))}</p>
+        </div>
+      )}
+      {menuPlan && <MenuPlanGrid menuPlan={menuPlan} />}
       <div className="mt-4 grid gap-3">
         {suggestions.length === 0 && !loading ? <EmptyState text={t('common.empty')} /> : suggestions.map((suggestion, index) => (
           <SuggestionCard key={index} suggestion={suggestion} canWrite={canWrite} onApply={onApply} />
@@ -54,6 +62,36 @@ export default function AiResultCards({
       <h3 className="mt-5 font-semibold">{t('ai.structuredJson')}</h3>
       <pre className="mt-3 max-h-72 overflow-auto rounded-md bg-stone-50 p-4 text-xs text-slate-700">{JSON.stringify(result, null, 2)}</pre>
     </Card>
+  )
+}
+
+function MenuPlanGrid({ menuPlan }: { menuPlan: Record<string, unknown> }) {
+  const { t } = useTranslation()
+  const days = toRows(menuPlan.days)
+  return (
+    <div className="mt-4 rounded-lg border border-stone-200 bg-stone-50 p-4" data-testid="ai-menu-plan-grid">
+      <h3 className="font-semibold">{String(menuPlan.title || t('planner.weeklyView'))}</h3>
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        {days.map((day, dayIndex) => (
+          <div key={`${day.date}-${dayIndex}`} className="rounded-md border border-stone-200 bg-white p-3">
+            <p className="font-semibold">{String(day.date || '')}</p>
+            <div className="mt-2 space-y-2">
+              {toRows(day.meals).map((meal, mealIndex) => (
+                <div key={`${meal.meal_time}-${mealIndex}`} className="rounded-md bg-stone-50 p-2 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium">{String(meal.meal_time || '')}: {String(meal.recipe_name || '')}</span>
+                    <Badge status={String(meal.status || 'review_needed')}>{String(meal.status || 'review_needed')}</Badge>
+                  </div>
+                  {Array.isArray(meal.warnings) && meal.warnings.length > 0 && (
+                    <p className="mt-1 text-amber-700">{meal.warnings.map(String).join(' ')}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 

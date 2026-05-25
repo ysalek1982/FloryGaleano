@@ -30,7 +30,10 @@
 
 - AI suggestions must be structured JSON.
 - AI suggestions are validated before use by allergy, nutrition, rotation, and inventory checks.
+- AI menu generation must use family-accessible candidate recipes before calling Gemini.
+- Gemini cannot override server-side allergy, rotation, nutrition, inventory, or category validators.
 - Unsafe suggestions are blocked or marked `review_needed`.
+- Gemini HTTP 429 is stored as `rate_limited`; it must not erase or expose encrypted user keys.
 - Provider failures return structured `review_needed` fallbacks instead of exposing raw errors.
 - Missing user Gemini keys return setup-needed `review_needed` responses instead of failing the user workflow.
 
