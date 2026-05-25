@@ -590,7 +590,140 @@
     "keyInvalidBody": "La clave Gemini guardada es inválida o no pudo probarse. Prueba de nuevo o reemplázala en Ajustes.",
     "keyRateLimitedTitle": "La cuota de Gemini está limitada temporalmente",
     "keyRateLimitedBody": "Tu clave guardada parece utilizable, pero Gemini tiene cuota o límites activos. Espera, prueba de nuevo o cambia a un modelo más liviano en Ajustes.",
-    "keyMissingCode": "La clave API de Gemini no está configurada."
+    "keyMissingCode": "La clave API de Gemini no está configurada.",
+    "reviewNeededStructuredData": "Esta sugerencia IA necesita datos estructurados de receta o menú antes de aplicarse con seguridad.",
+    "actionTemplates": "Plantillas guiadas",
+    "quickShortcuts": "Accesos rápidos IA",
+    "tabs": {
+      "menuPlanning": "Planificación de Menús",
+      "recipeHelp": "Ayuda de Recetas",
+      "inventoryHelp": "Ayuda de Inventario",
+      "allergyNutrition": "Alergias y Nutrición",
+      "customRequest": "Chat / Pedido Personalizado"
+    }
+  },
+  "aiCopilot": {
+    "eyebrow": "IA en esta sección",
+    "title": "Copiloto IA",
+    "subtitle": "Pide ayuda contextual sin salir del flujo del chef. Las sugerencias quedan como borrador hasta validarse y confirmarse.",
+    "open": "Abrir Copiloto IA",
+    "contextTitle": "Contexto actual",
+    "fullWorkspace": "Abrir Chef IA completo",
+    "quickActions": "Acciones sugeridas",
+    "noActions": "Aún no hay acciones IA contextuales para esta vista.",
+    "resultPreview": "Vista previa del resultado",
+    "emptyResult": "Elige una acción para generar un borrador validado.",
+    "noSuggestions": "No se devolvieron sugerencias.",
+    "suggestedAction": "Acción sugerida",
+    "reasonUnavailable": "La IA no dio un motivo.",
+    "applySuggestion": "Aplicar sugerencia",
+    "cannotApply": "No se puede aplicar",
+    "repairSuggestion": "Reparar sugerencia",
+    "explainWhy": "¿Por qué?",
+    "requiredUserAction": "Acción requerida",
+    "reviewBeforeApply": "Revisa la validación antes de aplicar cualquier cambio.",
+    "applyDialogTitle": "Revisar acción de IA",
+    "applyDialogBody": "Confirma exactamente qué se creará o actualizará. Las sugerencias inseguras se bloquean.",
+    "applyMissingData": "Esta sugerencia no tiene datos estructurados suficientes, por eso no puede aplicarse automáticamente.",
+    "reviewReason": "Motivo de revisión",
+    "confirmApply": "Confirmar aplicación",
+    "appliedFromCopilot": "Aplicado desde Copiloto IA después de validación.",
+    "appliedDraft": "Borrador de Copiloto IA",
+    "statusTitle": "Estado de IA",
+    "readyBody": "Gemini está configurado para este usuario. Las sugerencias aún se validan antes de usarse.",
+    "setupBody": "Configura tu clave API de Gemini en Ajustes antes de ejecutar acciones IA.",
+    "rateLimitedBody": "La cuota o límites de Gemini están activos. Espera el cooldown, prueba de nuevo o cambia el modelo.",
+    "retryAfter": "Reintenta en aproximadamente {{seconds}} segundos.",
+    "providerFailureTitle": "Proveedor IA requiere revisión",
+    "providerFailureBody": "El proveedor IA no devolvió una respuesta útil. No se cambió ningún dato.",
+    "badges": {
+      "ready": "Listo",
+      "setupNeeded": "Configurar",
+      "rateLimited": "Limitado",
+      "reviewNeeded": "Revisar"
+    },
+    "pages": {
+      "dashboard": "Panel",
+      "families": "Familias",
+      "diners": "Comensales",
+      "ingredients": "Ingredientes",
+      "recipes": "Recetas",
+      "menu_planner": "Planificador de Menús",
+      "day_planner": "Plan del Día",
+      "portion_calculator": "Calculadora de Porciones",
+      "shopping_list": "Lista de Compras",
+      "pantry": "Despensa",
+      "freezer": "Freezer",
+      "allergies": "Alergias",
+      "nutrition": "Nutrición",
+      "alerts": "Alertas",
+      "reports": "Reportes",
+      "settings": "Ajustes"
+    },
+    "actions": {
+      "dashboard": {
+        "summarizeRisks": { "label": "Resumir riesgos de cocina", "description": "Revisar alertas, faltantes, nutrición y producción de hoy." },
+        "nextAction": { "label": "Sugerir siguiente acción", "description": "Priorizar el flujo del chef para la familia actual." },
+        "explainAlerts": { "label": "Explicar alertas críticas", "description": "Convertir alertas críticas en una lista clara." }
+      },
+      "ingredients": {
+        "suggestCategory": { "label": "Categorizar con IA", "description": "Sugerir categoría predefinida y etiquetas probables." },
+        "detectAllergens": { "label": "Detectar alérgenos", "description": "Revisar señales de alérgenos y trazas." },
+        "suggestSubstitutions": { "label": "Buscar sustitutos", "description": "Sugerir alternativas más seguras." }
+      },
+      "recipes": {
+        "improveRecipe": { "label": "Mejorar con IA", "description": "Mejorar instrucciones, etiquetas y uso escolar/freezer." },
+        "checkSafety": { "label": "Revisar seguridad", "description": "Validar alergias, nutrición, rotación e inventario." },
+        "safeVariation": { "label": "Crear variación segura", "description": "Borrador sin ingredientes bloqueados." }
+      },
+      "menuPlanner": {
+        "generateWeek": { "label": "Generar semana validada", "description": "Usar recetas candidatas y validación de servidor." },
+        "completeSlots": { "label": "Completar semana con IA", "description": "Llenar espacios sin romper reglas de seguridad." },
+        "repairUnsafe": { "label": "Reparar espacios inseguros", "description": "Reparar solo comidas bloqueadas o en revisión." },
+        "improveVariety": { "label": "Mejorar variedad", "description": "Reducir repeticiones y mejorar diversidad." }
+      },
+      "dayPlanner": {
+        "completeDay": { "label": "Completar día", "description": "Planificar comidas restantes del día seleccionado." },
+        "sportSnack": { "label": "Sugerir snack deportivo", "description": "Encontrar snack seguro con energía y proteína." },
+        "repairDay": { "label": "Reparar plan del día", "description": "Reparar comidas inseguras o incompletas." }
+      },
+      "portionCalculator": {
+        "explainGrams": { "label": "Explicar gramos", "description": "Explicar porciones por comensal y producción." },
+        "batchSize": { "label": "Sugerir lote", "description": "Recomendar cantidades para preparación." }
+      },
+      "pantry": {
+        "usePantry": { "label": "Sugerir con despensa", "description": "Usar primero ingredientes disponibles." },
+        "expiringItems": { "label": "Usar próximos a vencer", "description": "Priorizar ingredientes antes de vencer." }
+      },
+      "freezer": {
+        "freezerFirst": { "label": "Usar freezer primero", "description": "Sugerir comidas preparadas que deben usarse pronto." },
+        "reheatingPlan": { "label": "Plan de recalentado", "description": "Crear nota de recalentado para cocina." }
+      },
+      "shopping": {
+        "prioritize": { "label": "Priorizar compras", "description": "Ordenar faltantes por urgencia." },
+        "explainMissing": { "label": "Explicar faltantes", "description": "Explicar por qué faltan o son urgentes." }
+      },
+      "allergies": {
+        "testIngredient": { "label": "Probar con IA", "description": "Revisar riesgo con contexto de alergias." },
+        "safeAlternative": { "label": "Sugerir alternativa", "description": "Buscar sustituciones más seguras." }
+      },
+      "nutrition": {
+        "explainGaps": { "label": "Explicar brechas", "description": "Explicar brechas de calorías y proteína." },
+        "highProteinMeal": { "label": "Sugerir alta proteína", "description": "Sugerir comida segura con más proteína." }
+      },
+      "alerts": {
+        "explainAlerts": { "label": "Explicar alertas", "description": "Resumir causas y siguientes pasos." },
+        "nextResolution": { "label": "Sugerir resolución", "description": "Priorizar qué resolver primero." }
+      },
+      "reports": {
+        "summarize": { "label": "Resumir reporte", "description": "Crear nota de chef desde el reporte actual." },
+        "explainWarnings": { "label": "Explicar advertencias", "description": "Explicar filas incompletas o riesgosas." }
+      },
+      "settings": {
+        "explainGemini": { "label": "Explicar Gemini", "description": "Explicar clave, límites y modelo." },
+        "testKey": { "label": "Probar clave", "description": "Guiar la prueba de la clave Gemini." }
+      }
+    }
   },
   "settings": {
     "title": "Configuración",

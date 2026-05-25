@@ -2,6 +2,7 @@ import { Plus, Printer } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import AiCopilotButton from '../../features/ai-copilot/components/AiCopilotButton'
 import { FreezerBatchSummary } from '../../features/freezer/components/FreezerBatchSummary'
 import { FreezerExpirationPanel } from '../../features/freezer/components/FreezerExpirationPanel'
 import { FreezerItemDialog } from '../../features/freezer/components/FreezerItemDialog'
@@ -66,6 +67,20 @@ export default function FreezerPage() {
         subtitle={t('freezer.subtitle')}
         action={
           <div className="flex flex-wrap gap-2">
+            <AiCopilotButton
+              compact
+              context={{ page_id: 'freezer', selected_family_id: freezer.familyId === 'all' ? freezer.data.families[0]?.id : freezer.familyId, relevant_records: { freezer_rows: freezer.rows.length } }}
+              actionKey="freezer.freezerFirst"
+              labelKey="aiCopilot.actions.freezer.freezerFirst.label"
+              testId="freezer-ai-first"
+            />
+            <AiCopilotButton
+              compact
+              context={{ page_id: 'freezer', selected_family_id: freezer.familyId === 'all' ? freezer.data.families[0]?.id : freezer.familyId, relevant_records: { freezer_rows: freezer.rows.length } }}
+              actionKey="freezer.reheatingPlan"
+              labelKey="aiCopilot.actions.freezer.reheatingPlan.label"
+              testId="freezer-ai-reheating"
+            />
             {canWrite ? (
               <Button onClick={() => setOpen(true)} data-testid="create-freezer-item">
                 <Plus className="h-4 w-4" />

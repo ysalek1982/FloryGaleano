@@ -590,7 +590,140 @@
     "keyInvalidBody": "The saved Gemini key is invalid or could not be tested. Test it again or replace it in Settings.",
     "keyRateLimitedTitle": "Gemini quota is temporarily limited",
     "keyRateLimitedBody": "Your saved key appears usable, but Gemini quota or rate limits are active. Wait, test again, or switch to a lighter model in Settings.",
-    "keyMissingCode": "Gemini API key is not configured."
+    "keyMissingCode": "Gemini API key is not configured.",
+    "reviewNeededStructuredData": "This AI suggestion needs structured recipe or menu data before it can be applied safely.",
+    "actionTemplates": "Guided action templates",
+    "quickShortcuts": "AI quick shortcuts",
+    "tabs": {
+      "menuPlanning": "Menu Planning",
+      "recipeHelp": "Recipe Help",
+      "inventoryHelp": "Inventory Help",
+      "allergyNutrition": "Allergy & Nutrition",
+      "customRequest": "Chat / Custom Request"
+    }
+  },
+  "aiCopilot": {
+    "eyebrow": "AI in this section",
+    "title": "AI Copilot",
+    "subtitle": "Ask for contextual help without leaving the chef workflow. Suggestions stay draft-only until validated and confirmed.",
+    "open": "Open AI Copilot",
+    "contextTitle": "Current context",
+    "fullWorkspace": "Open full AI Chef",
+    "quickActions": "Suggested actions",
+    "noActions": "No contextual AI actions for this view yet.",
+    "resultPreview": "Result preview",
+    "emptyResult": "Choose an action to generate a validated draft.",
+    "noSuggestions": "No suggestions were returned.",
+    "suggestedAction": "Suggested action",
+    "reasonUnavailable": "AI did not provide a reason.",
+    "applySuggestion": "Apply suggestion",
+    "cannotApply": "Cannot apply",
+    "repairSuggestion": "Repair suggestion",
+    "explainWhy": "Why?",
+    "requiredUserAction": "Required user action",
+    "reviewBeforeApply": "Review validation details before applying anything.",
+    "applyDialogTitle": "Review AI apply action",
+    "applyDialogBody": "Confirm exactly what will be created or updated. Unsafe suggestions are blocked.",
+    "applyMissingData": "This suggestion is missing structured data, so it cannot be applied automatically.",
+    "reviewReason": "Review reason",
+    "confirmApply": "Confirm apply",
+    "appliedFromCopilot": "Applied from AI Copilot after validation.",
+    "appliedDraft": "AI Copilot draft",
+    "statusTitle": "AI status",
+    "readyBody": "Gemini is configured for this user. AI suggestions will still be validated before use.",
+    "setupBody": "Configure your Gemini API key in Settings before running AI actions.",
+    "rateLimitedBody": "Gemini quota or rate limits are active. Wait for the cooldown, test again, or change model.",
+    "retryAfter": "Retry after approximately {{seconds}} seconds.",
+    "providerFailureTitle": "AI provider needs review",
+    "providerFailureBody": "The AI provider did not return a usable response. No data was changed.",
+    "badges": {
+      "ready": "Ready",
+      "setupNeeded": "Setup needed",
+      "rateLimited": "Rate limited",
+      "reviewNeeded": "Review needed"
+    },
+    "pages": {
+      "dashboard": "Dashboard",
+      "families": "Families",
+      "diners": "Diners",
+      "ingredients": "Ingredients",
+      "recipes": "Recipes",
+      "menu_planner": "Menu Planner",
+      "day_planner": "Day Planner",
+      "portion_calculator": "Portion Calculator",
+      "shopping_list": "Shopping List",
+      "pantry": "Pantry",
+      "freezer": "Freezer",
+      "allergies": "Allergies",
+      "nutrition": "Nutrition",
+      "alerts": "Alerts",
+      "reports": "Reports",
+      "settings": "Settings"
+    },
+    "actions": {
+      "dashboard": {
+        "summarizeRisks": { "label": "Summarize kitchen risks", "description": "Review alerts, missing ingredients, nutrition gaps, and today's production." },
+        "nextAction": { "label": "Suggest next best action", "description": "Prioritize the chef workflow for the current family." },
+        "explainAlerts": { "label": "Explain critical alerts", "description": "Turn critical alerts into a clear action list." }
+      },
+      "ingredients": {
+        "suggestCategory": { "label": "Categorize with AI", "description": "Suggest the predefined category and likely tags." },
+        "detectAllergens": { "label": "Detect likely allergens", "description": "Review allergen and trace-risk signals." },
+        "suggestSubstitutions": { "label": "Find substitutes", "description": "Suggest safer alternatives for unavailable or risky ingredients." }
+      },
+      "recipes": {
+        "improveRecipe": { "label": "Improve with AI", "description": "Improve instructions, tags, freezer or school suitability." },
+        "checkSafety": { "label": "Check safety", "description": "Validate allergy, nutrition, rotation, and inventory risk." },
+        "safeVariation": { "label": "Create safe variation", "description": "Draft a safer version without blocked ingredients." }
+      },
+      "menuPlanner": {
+        "generateWeek": { "label": "Generate validated week", "description": "Use candidate recipes and server-side validation." },
+        "completeSlots": { "label": "Complete week with AI", "description": "Fill empty slots while preserving safety rules." },
+        "repairUnsafe": { "label": "Repair unsafe slots", "description": "Repair only review-needed or blocked menu slots." },
+        "improveVariety": { "label": "Improve variety", "description": "Reduce repeated recipes and improve category diversity." }
+      },
+      "dayPlanner": {
+        "completeDay": { "label": "Complete day", "description": "Plan remaining meals for the selected day." },
+        "sportSnack": { "label": "Suggest sport snack", "description": "Find a safe snack with enough energy and protein." },
+        "repairDay": { "label": "Repair day plan", "description": "Repair unsafe or incomplete day slots." }
+      },
+      "portionCalculator": {
+        "explainGrams": { "label": "Explain grams", "description": "Explain diner portions and chef production quantities." },
+        "batchSize": { "label": "Suggest batch size", "description": "Recommend batch quantities for storage and prep." }
+      },
+      "pantry": {
+        "usePantry": { "label": "Suggest meals from pantry", "description": "Use available pantry items first." },
+        "expiringItems": { "label": "Use expiring items", "description": "Prioritize ingredients before they expire." }
+      },
+      "freezer": {
+        "freezerFirst": { "label": "Use freezer-first", "description": "Suggest prepared meals that should be used soon." },
+        "reheatingPlan": { "label": "Plan reheating", "description": "Create a chef-friendly reheating note." }
+      },
+      "shopping": {
+        "prioritize": { "label": "Prioritize purchases", "description": "Rank missing items by urgency." },
+        "explainMissing": { "label": "Explain missing items", "description": "Explain why items are missing or urgent." }
+      },
+      "allergies": {
+        "testIngredient": { "label": "Test with AI", "description": "Review ingredient risk with Allergy Shield context." },
+        "safeAlternative": { "label": "Suggest alternative", "description": "Find safer substitutions." }
+      },
+      "nutrition": {
+        "explainGaps": { "label": "Explain gaps", "description": "Explain calorie and protein gaps." },
+        "highProteinMeal": { "label": "Suggest high-protein meal", "description": "Suggest a safe meal to improve protein." }
+      },
+      "alerts": {
+        "explainAlerts": { "label": "Explain alerts", "description": "Summarize alert causes and next steps." },
+        "nextResolution": { "label": "Suggest resolution", "description": "Prioritize what to resolve first." }
+      },
+      "reports": {
+        "summarize": { "label": "Summarize report", "description": "Create a chef note from the current report." },
+        "explainWarnings": { "label": "Explain warnings", "description": "Explain incomplete or risky report rows." }
+      },
+      "settings": {
+        "explainGemini": { "label": "Explain Gemini setup", "description": "Explain key setup, rate limits, and model choice." },
+        "testKey": { "label": "Test key", "description": "Guide the Gemini key test flow." }
+      }
+    }
   },
   "settings": {
     "title": "Settings",

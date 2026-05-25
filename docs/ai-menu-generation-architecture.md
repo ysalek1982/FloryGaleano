@@ -17,6 +17,10 @@ Smart Family Meals uses Gemini only from Supabase Edge Functions. The browser ne
 
 `repair_menu_plan` accepts an existing draft menu and repairs only slots whose status is `review_needed` or `blocked`. Safe slots are locked and preserved unchanged. The repaired menu is returned as a draft and is not saved automatically.
 
+## Contextual AI Copilot
+
+The isolated AI Chef workspace is complemented by a contextual Copilot drawer. Pages send compact `page_context` metadata and safe action keys to `ai-chef`; the Edge Function returns `AiCopilotResponse` JSON with suggestions, validation summary, warnings, and apply options. The browser blocks unsafe apply paths and never creates a recipe from a generic suggestion without structured payload.
+
 ## Candidate-First Planning
 
 The Edge Function scores and caps recipe candidates before Gemini sees them. Candidates are limited to family-accessible recipes and include:

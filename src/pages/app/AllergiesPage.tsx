@@ -2,6 +2,7 @@ import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import AiCopilotButton from '../../features/ai-copilot/components/AiCopilotButton'
 import { AllergyFormDialog } from '../../features/allergies/components/AllergyFormDialog'
 import { AllergyList } from '../../features/allergies/components/AllergyList'
 import { AllergyRulesSummary } from '../../features/allergies/components/AllergyRulesSummary'
@@ -38,14 +39,30 @@ export default function AllergiesPage() {
         title={t('allergies.title')}
         subtitle={t('allergies.subtitle')}
         action={
-          canWrite ? (
-            <Button onClick={() => setOpen(true)}>
-              <Plus className="h-4 w-4" />
-              {t('allergies.create')}
-            </Button>
-          ) : (
-            <ReadOnlyNotice />
-          )
+          <div className="flex flex-wrap gap-2">
+            <AiCopilotButton
+              compact
+              context={{ page_id: 'allergies', selected_family_id: familyFilter === 'all' ? data.families[0]?.id : familyFilter, relevant_records: { allergy_count: visibleAllergies.length } }}
+              actionKey="allergies.testIngredient"
+              labelKey="aiCopilot.actions.allergies.testIngredient.label"
+              testId="allergies-ai-test"
+            />
+            <AiCopilotButton
+              compact
+              context={{ page_id: 'allergies', selected_family_id: familyFilter === 'all' ? data.families[0]?.id : familyFilter, relevant_records: { allergy_count: visibleAllergies.length } }}
+              actionKey="allergies.safeAlternative"
+              labelKey="aiCopilot.actions.allergies.safeAlternative.label"
+              testId="allergies-ai-alternative"
+            />
+            {canWrite ? (
+              <Button onClick={() => setOpen(true)}>
+                <Plus className="h-4 w-4" />
+                {t('allergies.create')}
+              </Button>
+            ) : (
+              <ReadOnlyNotice />
+            )}
+          </div>
         }
       />
       <div className="mb-5 max-w-sm">

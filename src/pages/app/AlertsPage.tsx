@@ -1,6 +1,7 @@
 import { CheckCircle2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import AiCopilotButton from '../../features/ai-copilot/components/AiCopilotButton'
 import { AlertFilters } from '../../features/alerts/components/AlertFilters'
 import { AlertsSummaryCards } from '../../features/alerts/components/AlertsSummaryCards'
 import { AlertsTable } from '../../features/alerts/components/AlertsTable'
@@ -21,14 +22,23 @@ export default function AlertsPage() {
         title={t('alerts.title')}
         subtitle={t('alerts.subtitle')}
         action={
-          canWrite ? (
-            <Button variant="secondary" onClick={() => actions.markAllRead(alerts.alerts.map((alert) => alert.id))} data-testid="mark-all-alerts-read">
-              <CheckCircle2 className="h-4 w-4" />
-              {t('alerts.markAllRead')}
-            </Button>
-          ) : (
-            <ReadOnlyNotice />
-          )
+          <div className="flex flex-wrap gap-2">
+            <AiCopilotButton
+              compact
+              context={{ page_id: 'alerts', selected_family_id: alerts.familyId === 'all' ? undefined : alerts.familyId, relevant_records: { visible_alerts: alerts.alerts.length } }}
+              actionKey="alerts.explainAlerts"
+              labelKey="aiCopilot.actions.alerts.explainAlerts.label"
+              testId="alerts-ai-explain"
+            />
+            {canWrite ? (
+              <Button variant="secondary" onClick={() => actions.markAllRead(alerts.alerts.map((alert) => alert.id))} data-testid="mark-all-alerts-read">
+                <CheckCircle2 className="h-4 w-4" />
+                {t('alerts.markAllRead')}
+              </Button>
+            ) : (
+              <ReadOnlyNotice />
+            )}
+          </div>
         }
       />
       <div className="grid gap-5">

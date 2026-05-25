@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 
+import AiCopilotButton from '../../features/ai-copilot/components/AiCopilotButton'
 import { DayAiSuggestionsPanel } from '../../features/day-planner/components/DayAiSuggestionsPanel'
 import { DayAlertsPanel } from '../../features/day-planner/components/DayAlertsPanel'
 import { DayAllergySummary } from '../../features/day-planner/components/DayAllergySummary'
@@ -49,7 +50,28 @@ export default function DayPlannerPage() {
 
   return (
     <>
-      <PageHeader title={t('nav.dayPlanner')} subtitle={t('dayPlanner.subtitle')} />
+      <PageHeader
+        title={t('nav.dayPlanner')}
+        subtitle={t('dayPlanner.subtitle')}
+        action={(
+          <div className="flex flex-wrap gap-2">
+            <AiCopilotButton
+              compact
+              context={{ page_id: 'day_planner', selected_family_id: state.familyId, selected_date: state.date, selected_menu_plan_id: state.plan?.id, relevant_records: { planned_meals: state.dayItems.length } }}
+              actionKey="dayPlanner.completeDay"
+              labelKey="aiCopilot.actions.dayPlanner.completeDay.label"
+              testId="day-ai-complete"
+            />
+            <AiCopilotButton
+              compact
+              context={{ page_id: 'day_planner', selected_family_id: state.familyId, selected_date: state.date, selected_menu_plan_id: state.plan?.id, relevant_records: { planned_meals: state.dayItems.length } }}
+              actionKey="dayPlanner.sportSnack"
+              labelKey="aiCopilot.actions.dayPlanner.sportSnack.label"
+              testId="day-ai-sport-snack"
+            />
+          </div>
+        )}
+      />
       <div className="grid gap-5">
         <DayPlannerToolbar state={state} />
         {state.error && <Card className="border-danger-200 bg-danger-50 text-danger-800">{state.error}</Card>}

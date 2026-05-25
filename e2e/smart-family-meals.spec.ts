@@ -886,6 +886,136 @@ test('bilingual app shell persists Spanish and supports a Spanish CRUD flow', as
   await expect(page.getByText('Familias').first()).toBeVisible()
 })
 
+test('global AI Copilot opens from AppShell with setup guidance', async ({ page }) => {
+  await page.route('**/functions/v1/ai-key-manager', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        is_enabled: false,
+        configured: false,
+        key_status: 'not_configured',
+        key_last4: null,
+        last_tested_at: null,
+        last_error: null,
+      }),
+    })
+  })
+  await login(page)
+  await page.locator('select').last().selectOption('en')
+  await page.getByTestId('app-shell-ai-copilot').click()
+  await expect(page.getByTestId('ai-copilot-drawer')).toBeVisible()
+  await expect(page.getByTestId('ai-copilot-status')).toContainText('Setup needed')
+  await expect(page.getByTestId('ai-copilot-go-settings')).toBeVisible()
+})
+
+test('rate-limited Copilot blocks repeated AI actions', async ({ page }) => {
+  await page.route('**/functions/v1/ai-key-manager', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        is_enabled: true,
+        configured: false,
+        key_status: 'rate_limited',
+        key_last4: '4242',
+        last_tested_at: new Date().toISOString(),
+        last_error: 'Gemini quota or rate limit was reached.',
+        retry_after_seconds: 120,
+      }),
+    })
+  })
+  await login(page)
+  await page.locator('select').last().selectOption('en')
+  await page.getByTestId('app-shell-ai-copilot').click()
+  await expect(page.getByTestId('ai-copilot-drawer')).toBeVisible()
+  await expect(page.getByTestId('ai-copilot-status')).toContainText('Rate limited')
+  await expect(page.getByTestId('ai-copilot-retry-after')).toContainText('120')
+  await expect(page.getByTestId('ai-copilot-action-dashboard-summarizeRisks')).toBeDisabled()
+})
+
+test('Recipes page contextual Copilot sends recipe context and blocks generic apply', async ({ page }) => {
+  await mockAiKeyConfigured(page)
+  let sawRecipeContext = false
+  await page.route('**/functions/v1/ai-chef', async (route) => {
+    const request = route.request().postDataJSON() as { page_context?: { page_id?: string }; action?: string }
+    sawRecipeContext = request.page_context?.page_id === 'recipes' && request.action === 'contextual_suggestion'
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        status: 'review_needed',
+        page_id: 'recipes',
+        action: 'contextual_suggestion',
+        title: 'Recipe review',
+        summary: 'Review before applying.',
+        suggestions: [{
+          id: 'generic-recipe-suggestion',
+          type: 'recipe',
+          title: 'Improve recipe instructions',
+          reason: 'Generic copy improvement needs structured recipe payload.',
+          status: 'review_needed',
+          safety_status: 'review_needed',
+          confidence: 0.6,
+          warnings: ['Missing structured recipe payload.'],
+          data: {},
+          apply_option: 'apply_recipe_patch',
+        }],
+        validation_summary: { status: 'review_needed', reasons: ['Validated server-side.'], warnings: [] },
+        apply_options: ['no_apply_available'],
+      }),
+    })
+  })
+  await login(page)
+  await page.locator('select').last().selectOption('en')
+  await page.goto('/app/recipes')
+  await page.getByTestId('recipes-ai-improve').click()
+  await expect(page.getByTestId('ai-copilot-result')).toBeVisible()
+  await expect(page.getByTestId('ai-copilot-suggestion-card')).toContainText('Improve recipe instructions')
+  await expect(page.getByTestId('ai-copilot-apply')).toBeDisabled()
+  expect(sawRecipeContext).toBe(true)
+})
+
+test('/app/ai-chef guided tabs render action templates', async ({ page }) => {
+  await mockAiKeyConfigured(page)
+  await login(page)
+  await page.locator('select').last().selectOption('en')
+  await page.goto('/app/ai-chef')
+  await expect(page.getByTestId('ai-workspace-tabs')).toBeVisible()
+  await page.getByTestId('ai-tab-inventory').click()
+  await expect(page.getByTestId('ai-template-action-freezerFirst')).toBeVisible()
+  await page.getByTestId('ai-tab-recipe').click()
+  await expect(page.getByTestId('ai-template-action-safeRecipe')).toBeVisible()
+})
+
+test('Spanish Copilot labels render correctly', async ({ page }) => {
+  await page.route('**/functions/v1/ai-key-manager', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        is_enabled: false,
+        configured: false,
+        key_status: 'not_configured',
+        key_last4: null,
+        last_tested_at: null,
+        last_error: null,
+      }),
+    })
+  })
+  await login(page)
+  await page.locator('select').last().selectOption('es')
+  await page.getByTestId('app-shell-ai-copilot').click()
+  await expect(page.getByTestId('ai-copilot-drawer')).toContainText('Copiloto IA')
+  await expect(page.getByTestId('ai-copilot-go-settings')).toContainText('Ir a Ajustes')
+})
+
 async function login(page: Page, user = qaUser) {
   await page.goto('/login')
   await page.getByTestId('auth-email').fill(user.email)

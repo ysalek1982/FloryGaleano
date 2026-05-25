@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 
+import AiCopilotButton from '../../features/ai-copilot/components/AiCopilotButton'
 import { DinerNutritionTable } from '../../features/nutrition/components/DinerNutritionTable'
 import { MacroDistributionPanel } from '../../features/nutrition/components/MacroDistributionPanel'
 import { MissingNutritionDataPanel } from '../../features/nutrition/components/MissingNutritionDataPanel'
@@ -10,14 +11,37 @@ import { PrintableNutritionReport } from '../../features/nutrition/components/Pr
 import { WeeklyNutritionTable } from '../../features/nutrition/components/WeeklyNutritionTable'
 import { useNutritionView } from '../../features/nutrition/hooks/useNutritionView'
 import { Card, PageHeader } from '../../features/shared/chefUi'
+import { useAppData } from '../../lib/AppState'
 
 export default function NutritionPage() {
   const { t } = useTranslation()
   const nutrition = useNutritionView()
+  const { data } = useAppData()
 
   return (
     <>
-      <PageHeader title={t('nutrition.title')} subtitle={t('nutrition.subtitle')} />
+      <PageHeader
+        title={t('nutrition.title')}
+        subtitle={t('nutrition.subtitle')}
+        action={(
+          <div className="flex flex-wrap gap-2">
+            <AiCopilotButton
+              compact
+              context={{ page_id: 'nutrition', selected_family_id: data.families[0]?.id, relevant_records: { diner_rows: nutrition.dinerRows.length } }}
+              actionKey="nutrition.explainGaps"
+              labelKey="aiCopilot.actions.nutrition.explainGaps.label"
+              testId="nutrition-ai-gaps"
+            />
+            <AiCopilotButton
+              compact
+              context={{ page_id: 'nutrition', selected_family_id: data.families[0]?.id, relevant_records: { diner_rows: nutrition.dinerRows.length } }}
+              actionKey="nutrition.highProteinMeal"
+              labelKey="aiCopilot.actions.nutrition.highProteinMeal.label"
+              testId="nutrition-ai-protein"
+            />
+          </div>
+        )}
+      />
       <PrintableNutritionReport nutrition={nutrition} />
       <div className="mt-5">
         <NutritionSummaryCards nutrition={nutrition} />

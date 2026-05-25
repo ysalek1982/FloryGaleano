@@ -23,6 +23,11 @@ const supportedActions = new Set([
   'reduce_waste_menu',
   'purchase_priority',
   'explain_missing_items',
+  'contextual_suggestion',
+  'explain_current_page',
+  'suggest_next_action',
+  'repair_current_item',
+  'summarize_current_context',
   'ping',
 ])
 
@@ -38,6 +43,7 @@ const inventoryAwareActions = new Set([
 ])
 
 const menuPlanActions = new Set(['generate_validated_menu_plan', 'repair_menu_plan', 'generate_week_menu', 'generate_day_menu'])
+const contextualActions = new Set(['contextual_suggestion', 'explain_current_page', 'suggest_next_action', 'repair_current_item', 'summarize_current_context'])
 const mealTimes = ['breakfast', 'school_lunch', 'lunch', 'snack', 'sport_snack', 'dinner', 'evening_snack']
 const modelFallbacks = ['gemini-2.5-flash-lite', 'gemini-2.5-flash']
 
@@ -96,6 +102,47 @@ const menuPlanResponseSchema = {
     },
   },
   required: ['action', 'language', 'menu_plan', 'new_recipe_suggestions', 'shopping_list_suggestions', 'validation_summary'],
+}
+
+const aiCopilotResponseSchema = {
+  type: 'object',
+  properties: {
+    status: { type: 'string', enum: ['safe', 'review_needed', 'blocked'] },
+    page_id: { type: 'string' },
+    action: { type: 'string' },
+    title: { type: 'string' },
+    summary: { type: 'string' },
+    suggestions: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          type: { type: 'string', enum: ['recipe', 'menu', 'shopping', 'inventory', 'allergy', 'nutrition', 'report', 'settings'] },
+          title: { type: 'string' },
+          reason: { type: 'string' },
+          status: { type: 'string', enum: ['safe', 'review_needed', 'blocked'] },
+          confidence: { type: 'number' },
+          warnings: { type: 'array', items: { type: 'string' } },
+          data: { type: 'object' },
+          apply_option: { type: 'string', enum: ['apply_recipe_patch', 'apply_menu_patch', 'create_shopping_item', 'create_alert', 'open_settings', 'no_apply_available'] },
+        },
+        required: ['id', 'type', 'title', 'reason', 'status', 'confidence', 'warnings', 'data', 'apply_option'],
+      },
+    },
+    warnings: { type: 'array', items: { type: 'string' } },
+    validation_summary: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: ['safe', 'review_needed', 'blocked'] },
+        reasons: { type: 'array', items: { type: 'string' } },
+        warnings: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['status', 'reasons', 'warnings'],
+    },
+    apply_options: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['status', 'page_id', 'action', 'title', 'summary', 'suggestions', 'warnings', 'validation_summary', 'apply_options'],
 }
 
 const aiFunctionContracts = [
@@ -226,6 +273,7 @@ serve(async (req) => {
       'Prefer existing recipe_id values from candidate_recipes.',
       'Do not save data. Return draft suggestions only.',
       action === 'repair_menu_plan' ? 'Repair only meals marked review_needed or blocked in draft_menu_plan; preserve safe meals unchanged.' : '',
+      contextualActions.has(action) ? 'For contextual Copilot actions, return AiCopilotResponse and include only apply_options that have complete structured data.' : '',
       'Use the requested language for user-facing explanations.',
     ].filter(Boolean).join('\n')
 
@@ -236,8 +284,9 @@ serve(async (req) => {
       language: body?.language || context.profile?.preferred_language || 'en',
       function_contracts: aiFunctionContracts,
       context: compactContext,
+      page_context: body?.page_context || null,
       draft_menu_plan: action === 'repair_menu_plan' ? body?.draft_menu_plan || body?.menu_plan || null : undefined,
-      schema_name: isMenuPlanning ? 'MenuPlanAiResponse' : 'ValidatedAiSuggestionsResponse',
+      schema_name: isMenuPlanning ? 'MenuPlanAiResponse' : contextualActions.has(action) ? 'AiCopilotResponse' : 'ValidatedAiSuggestionsResponse',
     })
 
     const geminiResult = await generateWithGemini({
@@ -245,7 +294,7 @@ serve(async (req) => {
       preferredModel: selectedKey.model,
       systemPrompt,
       userPrompt,
-      schema: isMenuPlanning ? menuPlanResponseSchema : null,
+      schema: isMenuPlanning ? menuPlanResponseSchema : contextualActions.has(action) ? aiCopilotResponseSchema : null,
     })
 
     if (!geminiResult.ok) {
@@ -289,6 +338,8 @@ serve(async (req) => {
       ? action === 'repair_menu_plan'
         ? validateRepairedMenuPlanOutput(parsed, context, inventoryForecast, action, candidateRecipes, body?.draft_menu_plan || body?.menu_plan)
         : validateMenuPlanOutput(parsed, context, inventoryForecast, action, candidateRecipes)
+      : contextualActions.has(action)
+        ? validateCopilotOutput(parsed, context, inventoryForecast, action, body?.page_context)
       : validateAiOutput(parsed, context, inventoryForecast, action)
     await createAiAlerts(admin, context, validated.suggestions)
     return json({
@@ -431,6 +482,16 @@ function normalizeAction(action: string | undefined) {
     generate_validated_menu_plan: 'generate_validated_menu_plan',
     repairMenuPlan: 'repair_menu_plan',
     repair_menu_plan: 'repair_menu_plan',
+    contextualSuggestion: 'contextual_suggestion',
+    explainCurrentPage: 'explain_current_page',
+    suggestNextAction: 'suggest_next_action',
+    repairCurrentItem: 'repair_current_item',
+    summarizeCurrentContext: 'summarize_current_context',
+    contextual_suggestion: 'contextual_suggestion',
+    explain_current_page: 'explain_current_page',
+    suggest_next_action: 'suggest_next_action',
+    repair_current_item: 'repair_current_item',
+    summarize_current_context: 'summarize_current_context',
     translate: 'create_recipe',
     productionPlan: 'calculate_menu_improvements',
   }
@@ -932,6 +993,99 @@ function validateMenuMeal(
     inventory_status: inventoryValidation.status,
     nutrition_status: recipe ? 'available' : 'review_needed',
     warnings: reasons,
+  }
+}
+
+function validateCopilotOutput(
+  output: Record<string, unknown>,
+  context: Record<string, unknown>,
+  inventoryForecast: InventoryForecast,
+  action: string,
+  pageContext: unknown,
+) {
+  const page = pageContext && typeof pageContext === 'object' ? pageContext as Record<string, unknown> : {}
+  const rawSuggestions = arrayRecords(output.suggestions)
+  const normalizedInput = {
+    suggestions: rawSuggestions.map((suggestion, index) => ({
+      title: suggestion.title || `Copilot suggestion ${index + 1}`,
+      ingredients: Array.isArray(suggestion.ingredients) ? suggestion.ingredients : arrayRecords(suggestion.data).map((item) => item.ingredient).filter(Boolean),
+      recipe_id: (suggestion.data as Record<string, unknown> | undefined)?.recipe_id || suggestion.recipe_id || null,
+      planned_date: (suggestion.data as Record<string, unknown> | undefined)?.planned_date || null,
+      category_code: (suggestion.data as Record<string, unknown> | undefined)?.category_code || suggestion.category_code || null,
+      nutrition: (suggestion.data as Record<string, unknown> | undefined)?.nutrition || suggestion.nutrition || null,
+      safety_status: suggestion.status || suggestion.safety_status || 'review_needed',
+      safety_notes: Array.isArray(suggestion.warnings) ? suggestion.warnings : [],
+    })),
+  }
+  const deterministic = validateAiOutput(normalizedInput, context, inventoryForecast, action)
+  const deterministicSuggestions = arrayRecords(deterministic.suggestions)
+  const suggestions = rawSuggestions.map((suggestion, index) => {
+    const checked = deterministicSuggestions[index] || {}
+    const rawStatus = String(suggestion.status || checked.safety_status || 'review_needed')
+    const data = suggestion.data && typeof suggestion.data === 'object' ? suggestion.data as Record<string, unknown> : {}
+    let applyOption = String(suggestion.apply_option || 'no_apply_available')
+    const missingRequiredData =
+      (applyOption === 'apply_menu_patch' && !(data.recipe_id && data.planned_date && data.meal_time)) ||
+      (applyOption === 'create_shopping_item' && !(data.ingredient_id && data.quantity)) ||
+      (applyOption === 'apply_recipe_patch' && !(data.recipe_id || data.recipe_payload))
+    const status = rawStatus === 'blocked' || checked.safety_status === 'blocked'
+      ? 'blocked'
+      : rawStatus === 'safe' && checked.safety_status === 'safe' && !missingRequiredData
+        ? 'safe'
+        : 'review_needed'
+    if (status === 'blocked' || missingRequiredData) applyOption = 'no_apply_available'
+    return {
+      ...suggestion,
+      id: String(suggestion.id || `copilot-${index + 1}`),
+      status,
+      safety_status: status,
+      usable: status === 'safe',
+      rotation_status: checked.rotation_status || 'review_needed',
+      nutrition_status: checked.nutrition_status || 'review_needed',
+      inventory_status: checked.inventory_status || 'review_needed',
+      apply_option: applyOption,
+      safety_notes: [
+        ...arrayStrings(suggestion.warnings),
+        ...arrayStrings(checked.safety_notes),
+        ...(missingRequiredData ? ['Suggestion is missing structured data required for safe apply.'] : []),
+      ],
+    }
+  })
+  const status = suggestions.some((suggestion) => suggestion.status === 'blocked')
+    ? 'blocked'
+    : suggestions.some((suggestion) => suggestion.status === 'review_needed')
+      ? 'review_needed'
+      : 'safe'
+
+  return {
+    status,
+    page_id: String(output.page_id || page.page_id || 'dashboard'),
+    action,
+    title: String(output.title || 'AI Copilot suggestion'),
+    summary: String(output.summary || 'Review the validated suggestions before applying any change.'),
+    suggestions,
+    usable_suggestions: suggestions.filter((suggestion) => suggestion.usable),
+    warnings: [
+      ...arrayStrings(output.warnings),
+      ...inventoryForecast.warnings,
+    ],
+    validation_summary: {
+      status,
+      reasons: [
+        `Contextual action ${action} validated server-side.`,
+        'AI output is draft-only and no data was saved automatically.',
+      ],
+      warnings: [
+        ...arrayStrings((output.validation_summary as Record<string, unknown> | undefined)?.warnings),
+        ...inventoryForecast.warnings,
+      ],
+    },
+    apply_options: suggestions.map((suggestion) => suggestion.apply_option),
+    missing_ingredients: inventoryForecast.missing_ingredients,
+    expiring_items: inventoryForecast.expiring_items,
+    freezer_first_candidates: inventoryForecast.freezer_first_candidates,
+    purchase_priority: inventoryForecast.purchase_priority,
+    tool_architecture: aiFunctionContracts,
   }
 }
 

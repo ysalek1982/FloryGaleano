@@ -25,6 +25,8 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import LoadingSkeleton from '../components/feedback/LoadingSkeleton'
+import AiCopilotButton from '../features/ai-copilot/components/AiCopilotButton'
+import AiCopilotProvider from '../features/ai-copilot/components/AiCopilotProvider'
 import { useAppData, useAuth } from '../lib/AppState'
 import { cn } from '../lib/utils'
 
@@ -49,6 +51,14 @@ const navItems = [
 ]
 
 export default function AppShell() {
+  return (
+    <AiCopilotProvider>
+      <AppShellFrame />
+    </AiCopilotProvider>
+  )
+}
+
+function AppShellFrame() {
   const { t, i18n } = useTranslation()
   const { profile, logout, updateProfile } = useAuth()
   const { data, isDataLoading } = useAppData()
@@ -129,6 +139,7 @@ export default function AppShell() {
             >
               {data.families.length === 0 ? <option value="">{t('empty.families')}</option> : data.families.map((family) => <option key={family.id} value={family.id}>{family.name}</option>)}
             </select>
+            <AiCopilotButton compact testId="app-shell-ai-copilot" />
             <label className="flex items-center gap-2 text-xs text-slate-700">
               <Languages className="h-4 w-4" aria-hidden="true" />
               <span className="sr-only">{t('common.language')}</span>

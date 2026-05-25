@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import AiCopilotButton from '../../features/ai-copilot/components/AiCopilotButton'
 import { ManualShoppingItemDialog } from '../../features/shopping/components/ManualShoppingItemDialog'
 import { PrintableShoppingList } from '../../features/shopping/components/PrintableShoppingList'
 import { ShoppingListTable } from '../../features/shopping/components/ShoppingListTable'
@@ -23,7 +24,28 @@ export default function ShoppingListPage() {
 
   return (
     <>
-      <PageHeader title={t('shopping.title')} subtitle={t('shopping.subtitle')} />
+      <PageHeader
+        title={t('shopping.title')}
+        subtitle={t('shopping.subtitle')}
+        action={(
+          <div className="flex flex-wrap gap-2">
+            <AiCopilotButton
+              compact
+              context={{ page_id: 'shopping_list', selected_family_id: shopping.familyId, selected_menu_plan_id: shopping.activeList?.menu_plan_id, relevant_records: { missing_items: shopping.summary.missing } }}
+              actionKey="shopping.prioritize"
+              labelKey="aiCopilot.actions.shopping.prioritize.label"
+              testId="shopping-ai-prioritize"
+            />
+            <AiCopilotButton
+              compact
+              context={{ page_id: 'shopping_list', selected_family_id: shopping.familyId, selected_menu_plan_id: shopping.activeList?.menu_plan_id, relevant_records: { missing_items: shopping.summary.missing } }}
+              actionKey="shopping.explainMissing"
+              labelKey="aiCopilot.actions.shopping.explainMissing.label"
+              testId="shopping-ai-explain"
+            />
+          </div>
+        )}
+      />
       <ShoppingListToolbar
         shopping={shopping}
         canWrite={canWrite}

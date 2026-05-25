@@ -1,8 +1,9 @@
-import { Brain, Plus, ShoppingCart } from 'lucide-react'
+import { Plus, ShoppingCart } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
+import AiCopilotButton from '../../features/ai-copilot/components/AiCopilotButton'
 import AddRecipeToSlotDialog from '../../features/menu-planner/components/AddRecipeToSlotDialog'
 import MealSlotContent from '../../features/menu-planner/components/MealSlotContent'
 import {
@@ -70,7 +71,20 @@ export default function MenuPlannerPage() {
           <div className="flex flex-wrap gap-2">
             {canWrite && <Button variant="secondary" onClick={generateShopping}><ShoppingCart className="h-4 w-4" />{t('planner.generateShopping')}</Button>}
             <Link to="/app/portion-calculator" className="inline-flex rounded-md bg-forest-700 px-4 py-2 text-sm font-semibold text-white">{t('planner.calculateGrams')}</Link>
-            <Link to="/app/ai-chef" className="inline-flex rounded-md bg-ai-600 px-4 py-2 text-sm font-semibold text-white"><Brain className="h-4 w-4" />{t('planner.completeWithAi')}</Link>
+            <AiCopilotButton
+              compact
+              context={{ page_id: 'menu_planner', selected_family_id: familyId, selected_week: weekStart, selected_menu_plan_id: plan?.id, relevant_records: { planned_items: familyItems.length, empty_slots: (weekDays.length * mealTimes.length) - familyItems.length } }}
+              actionKey="menuPlanner.completeSlots"
+              labelKey="aiCopilot.actions.menuPlanner.completeSlots.label"
+              testId="planner-ai-complete-week"
+            />
+            <AiCopilotButton
+              compact
+              context={{ page_id: 'menu_planner', selected_family_id: familyId, selected_week: weekStart, selected_menu_plan_id: plan?.id, relevant_records: { planned_items: familyItems.length } }}
+              actionKey="menuPlanner.repairUnsafe"
+              labelKey="aiCopilot.actions.menuPlanner.repairUnsafe.label"
+              testId="planner-ai-repair-unsafe"
+            />
             {!canWrite && <ReadOnlyNotice />}
           </div>
         )}

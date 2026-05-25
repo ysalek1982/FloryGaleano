@@ -1,8 +1,8 @@
-import { Plus, WandSparkles } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
 
+import AiCopilotButton from '../../features/ai-copilot/components/AiCopilotButton'
 import RecipeBuilderDialog from '../../features/recipes/components/RecipeBuilderDialog'
 import {
   Badge,
@@ -46,8 +46,21 @@ export default function RecipesPage() {
         title={t('recipes.title')}
         subtitle={t('recipes.subtitle')}
         action={(
-          <div className="flex gap-2">
-            <Link to="/app/ai-chef" className="inline-flex rounded-md bg-ai-600 px-4 py-2 text-sm font-semibold text-white focus-ring"><WandSparkles className="h-4 w-4" />{t('recipes.generateAi')}</Link>
+          <div className="flex flex-wrap gap-2">
+            <AiCopilotButton
+              compact
+              context={{ page_id: 'recipes', selected_family_id: data.families[0]?.id, relevant_records: { visible_recipes: recipes.length } }}
+              actionKey="recipes.improveRecipe"
+              labelKey="aiCopilot.actions.recipes.improveRecipe.label"
+              testId="recipes-ai-improve"
+            />
+            <AiCopilotButton
+              compact
+              context={{ page_id: 'recipes', selected_family_id: data.families[0]?.id, relevant_records: { visible_recipes: recipes.length } }}
+              actionKey="recipes.checkSafety"
+              labelKey="aiCopilot.actions.recipes.checkSafety.label"
+              testId="recipes-ai-safety"
+            />
             {canWrite ? <Button onClick={() => setOpen(true)} data-testid="create-recipe"><Plus className="h-4 w-4" />{t('recipes.create')}</Button> : <ReadOnlyNotice />}
           </div>
         )}

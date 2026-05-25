@@ -2,6 +2,7 @@ import { Printer } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import AiCopilotButton from '../../features/ai-copilot/components/AiCopilotButton'
 import { ExportMenu } from '../../features/exports/components/ExportMenu'
 import { createExportLabels } from '../../features/exports/utils/exportFormatters'
 import BatchSummaryTable from '../../features/portions/components/BatchSummaryTable'
@@ -61,7 +62,11 @@ export default function PortionCalculatorPage() {
 
   return (
     <>
-      <PageHeader title={t('portion.title')} subtitle={t('portion.subtitle')} action={<div className="flex flex-wrap gap-2"><Button variant="secondary" onClick={() => window.print()}><Printer className="h-4 w-4" />{t('common.print')}</Button><ExportMenu report={exportReport} testIdPrefix="portion-export" /></div>} />
+      <PageHeader
+        title={t('portion.title')}
+        subtitle={t('portion.subtitle')}
+        action={<div className="flex flex-wrap gap-2"><AiCopilotButton compact context={{ page_id: 'portion_calculator', selected_family_id: family?.id, selected_recipe_id: recipe?.id, relevant_records: { production_rows: productionRows.length } }} actionKey="portionCalculator.explainGrams" labelKey="aiCopilot.actions.portionCalculator.explainGrams.label" testId="portion-ai-explain" /><Button variant="secondary" onClick={() => window.print()}><Printer className="h-4 w-4" />{t('common.print')}</Button><ExportMenu report={exportReport} testIdPrefix="portion-export" /></div>}
+      />
       <Card>
         <div className="grid gap-3 md:grid-cols-3">
           <Field label={t('common.family')}><select className="input" value={family?.id || ''} disabled>{data.families.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>

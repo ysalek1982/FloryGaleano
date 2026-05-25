@@ -2,6 +2,7 @@ import { Plus, Printer } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import AiCopilotButton from '../../features/ai-copilot/components/AiCopilotButton'
 import { ExpirationForecastTable } from '../../features/inventory-forecast/components/ExpirationForecastTable'
 import { InventoryForecastPanel } from '../../features/inventory-forecast/components/InventoryForecastPanel'
 import { PurchasePriorityPanel } from '../../features/inventory-forecast/components/PurchasePriorityPanel'
@@ -34,6 +35,20 @@ export default function PantryPage() {
         subtitle={t('pantry.subtitle')}
         action={
           <div className="flex flex-wrap gap-2">
+            <AiCopilotButton
+              compact
+              context={{ page_id: 'pantry', selected_family_id: pantry.familyId === 'all' ? pantry.data.families[0]?.id : pantry.familyId, relevant_records: { pantry_rows: pantry.rows.length } }}
+              actionKey="pantry.usePantry"
+              labelKey="aiCopilot.actions.pantry.usePantry.label"
+              testId="pantry-ai-use-items"
+            />
+            <AiCopilotButton
+              compact
+              context={{ page_id: 'pantry', selected_family_id: pantry.familyId === 'all' ? pantry.data.families[0]?.id : pantry.familyId, relevant_records: { low_stock: pantry.lowStockRows.length, expiring: pantry.expiringRows.length } }}
+              actionKey="pantry.expiringItems"
+              labelKey="aiCopilot.actions.pantry.expiringItems.label"
+              testId="pantry-ai-expiring"
+            />
             {canWrite ? (
               <Button onClick={() => setOpen(true)} data-testid="create-pantry-item">
                 <Plus className="h-4 w-4" />

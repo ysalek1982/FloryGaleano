@@ -1,3 +1,6 @@
+import { useTranslation } from 'react-i18next'
+
+import AiCopilotButton from '../../features/ai-copilot/components/AiCopilotButton'
 import { AiSettingsPanel } from '../../features/settings/components/AiSettingsPanel'
 import { LanguageSettingsPanel } from '../../features/settings/components/LanguageSettingsPanel'
 import { MenuRulesSettingsPanel } from '../../features/settings/components/MenuRulesSettingsPanel'
@@ -10,7 +13,6 @@ import { useSettingsForm } from '../../features/settings/hooks/useSettingsForm'
 import { PageHeader } from '../../features/shared/chefUi'
 import { useAuth } from '../../lib/AppState'
 import { isProductionApp } from '../../lib/env'
-import { useTranslation } from 'react-i18next'
 
 export default function SettingsPage() {
   const { t } = useTranslation()
@@ -20,7 +22,19 @@ export default function SettingsPage() {
 
   return (
     <>
-      <PageHeader title={t('settings.title')} subtitle={t('settings.subtitle')} />
+      <PageHeader
+        title={t('settings.title')}
+        subtitle={t('settings.subtitle')}
+        action={(
+          <AiCopilotButton
+            compact
+            context={{ page_id: 'settings' }}
+            actionKey="settings.explainGemini"
+            labelKey="aiCopilot.actions.settings.explainGemini.label"
+            testId="settings-ai-explain"
+          />
+        )}
+      />
       <div className="grid gap-5 lg:grid-cols-2">
         <ProfileSettingsForm settings={settings} />
         <LanguageSettingsPanel settings={settings} />

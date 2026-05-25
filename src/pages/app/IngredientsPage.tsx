@@ -2,6 +2,7 @@ import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import AiCopilotButton from '../../features/ai-copilot/components/AiCopilotButton'
 import IngredientFormDialog from '../../features/ingredients/components/IngredientFormDialog'
 import { useFoodCategories } from '../../features/food-categories/hooks/useFoodCategories'
 import {
@@ -46,7 +47,29 @@ export default function IngredientsPage() {
 
   return (
     <>
-      <PageHeader title={t('ingredients.title')} subtitle={t('ingredients.subtitle')} action={canWrite ? <Button onClick={() => setOpen(true)} data-testid="create-ingredient"><Plus className="h-4 w-4" />{t('ingredients.create')}</Button> : <ReadOnlyNotice />} />
+      <PageHeader
+        title={t('ingredients.title')}
+        subtitle={t('ingredients.subtitle')}
+        action={(
+          <div className="flex flex-wrap gap-2">
+            <AiCopilotButton
+              compact
+              context={{ page_id: 'ingredients', selected_family_id: data.families[0]?.id, relevant_records: { visible_ingredients: ingredients.length } }}
+              actionKey="ingredients.suggestCategory"
+              labelKey="aiCopilot.actions.ingredients.suggestCategory.label"
+              testId="ingredients-ai-categorize"
+            />
+            <AiCopilotButton
+              compact
+              context={{ page_id: 'ingredients', selected_family_id: data.families[0]?.id, relevant_records: { visible_ingredients: ingredients.length } }}
+              actionKey="ingredients.suggestSubstitutions"
+              labelKey="aiCopilot.actions.ingredients.suggestSubstitutions.label"
+              testId="ingredients-ai-substitutes"
+            />
+            {canWrite ? <Button onClick={() => setOpen(true)} data-testid="create-ingredient"><Plus className="h-4 w-4" />{t('ingredients.create')}</Button> : <ReadOnlyNotice />}
+          </div>
+        )}
+      />
       <Card>
         <div className="mb-4 grid gap-3 lg:grid-cols-[1fr_180px_180px_180px_auto]">
           <input className="input" placeholder={t('common.search')} value={query} onChange={(event) => setQuery(event.target.value)} data-testid="ingredient-search" />

@@ -15,7 +15,7 @@ import { todayIso } from '../../lib/utils'
 export default function AiChefPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
-  const { data, addRecipe, addMenuPlanItem } = useAppData()
+  const { data, addMenuPlanItem } = useAppData()
   const canWrite = useCanWrite()
   const aiStatus = useAiConnectionTest()
   const [familyId, setFamilyId] = useState(data.families[0]?.id || '')
@@ -25,10 +25,20 @@ export default function AiChefPage() {
   const [result, setResult] = useState<Record<string, unknown> | null>(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [activeTab, setActiveTab] = useState('menu')
   const family = data.families.find((item) => item.id === familyId)
   const diners = data.familyMembers.filter((item) => item.family_id === familyId && (dinerId === 'all' || item.id === dinerId))
   const actions = Object.entries(t('ai.actions', { returnObjects: true }) as Record<string, string>)
+  const actionsByKey = Object.fromEntries(actions)
   const suggestions = Array.isArray(result?.suggestions) ? result.suggestions as Array<Record<string, unknown>> : []
+  const actionTabs = [
+    { key: 'menu', label: t('ai.tabs.menuPlanning'), actions: ['weeklyMenu', 'completeSlots', 'repairMenuPlan', 'variety', 'wasteReduction'] },
+    { key: 'recipe', label: t('ai.tabs.recipeHelp'), actions: ['safeRecipe', 'substitutions', 'schoolMenu', 'translate'] },
+    { key: 'inventory', label: t('ai.tabs.inventoryHelp'), actions: ['pantryMeals', 'freezerFirst', 'purchasePriority', 'explainMissing', 'shoppingList', 'freezerUsage'] },
+    { key: 'safety', label: t('ai.tabs.allergyNutrition'), actions: ['dailyMenu', 'productionPlan'] },
+    { key: 'custom', label: t('ai.tabs.customRequest'), actions: actions.map(([key]) => key) },
+  ]
+  const activeActionKeys = actionTabs.find((tab) => tab.key === activeTab)?.actions || actionTabs[0].actions
   const inventoryActionAliases: Record<string, string> = {
     pantryMeals: 'pantry_aware_meals',
     freezerFirst: 'freezer_first_meals',
@@ -62,10 +72,13 @@ export default function AiChefPage() {
   const applySuggestion = (suggestion: Record<string, unknown>) => {
     if (!canWrite) return
     if (suggestion.safety_status !== 'safe' && suggestion.usable !== true) return
-    const title = String(suggestion.title || t('recipes.create'))
     const recipeId = typeof suggestion.recipe_id === 'string' && data.recipes.some((recipe) => recipe.id === suggestion.recipe_id)
       ? suggestion.recipe_id
-      : addRecipe({ name: title, family_id: familyId, ai_generated: true, status: 'draft', servings: 4, instructions: Array.isArray(suggestion.instructions) ? suggestion.instructions.join('\n') : '' }, [{ ingredient_id: data.ingredients[0]?.id, quantity_g: 100 }]).id
+      : null
+    if (!recipeId) {
+      setMessage(t('ai.reviewNeededStructuredData'))
+      return
+    }
     const plan = data.menuPlans.find((item) => item.family_id === familyId)
     if (plan) addMenuPlanItem({ menu_plan_id: plan.id, recipe_id: recipeId, planned_date: plannedDate, meal_time: 'dinner', allergy_status: 'safe', variety_status: 'allowed', ai_generated: true })
     setMessage(t('ai.appliedSuggestion'))
@@ -74,7 +87,20 @@ export default function AiChefPage() {
   return (
     <>
       <PageHeader title={t('ai.title')} subtitle={t('ai.subtitle')} />
-      <div className="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
+      <div className="mb-5 grid gap-2 rounded-lg border border-ai-100 bg-ai-50 p-2 md:grid-cols-5" data-testid="ai-workspace-tabs">
+        {actionTabs.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            className={`rounded-md px-3 py-2 text-sm font-semibold focus-ring ${activeTab === tab.key ? 'bg-white text-ai-800 shadow-panel' : 'text-ai-700 hover:bg-white/70'}`}
+            onClick={() => setActiveTab(tab.key)}
+            data-testid={`ai-tab-${tab.key}`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <div className="grid gap-5 xl:grid-cols-[0.75fr_1fr_1fr]">
         <Card>
           {keyNeedsSetup && (
             <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4" data-testid="ai-key-setup-card">
@@ -137,11 +163,33 @@ export default function AiChefPage() {
             <textarea className="input min-h-32" placeholder={t('ai.chatPlaceholder')} value={prompt} onChange={(event) => setPrompt(event.target.value)} />
           </div>
           <div className="mt-4 grid gap-2">
-            {actions.map(([key, label]) => <Button key={key} variant="ai" disabled={loading || (!aiStatus.status.configured && !keyRateLimited)} onClick={() => runAction(key)} data-testid={`ai-action-${key}`}><Brain className="h-4 w-4" />{label}</Button>)}
+            <h2 className="font-serif text-xl font-semibold">{t('ai.actionTemplates')}</h2>
+            {activeActionKeys.filter((key) => actionsByKey[key]).map((key) => (
+              <Button key={key} variant="ai" disabled={loading || (!aiStatus.status.configured && !keyRateLimited)} onClick={() => runAction(key)} data-testid={`ai-template-action-${key}`}>
+                <Brain className="h-4 w-4" />
+                {actionsByKey[key]}
+              </Button>
+            ))}
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2 rounded-md border border-stone-200 bg-stone-50 p-3" aria-label={t('ai.quickShortcuts')}>
+            {actions.map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                className="rounded-full border border-stone-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:border-ai-300 hover:text-ai-700 focus-ring disabled:opacity-50"
+                disabled={loading || (!aiStatus.status.configured && !keyRateLimited)}
+                onClick={() => runAction(key)}
+                data-testid={`ai-action-${key}`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </Card>
         <div className="grid gap-5">
           <AiContextPanel family={family} diners={diners} allergies={data.allergies} rotationDays={data.settings.default_variety_days} language={i18n.language} />
+        </div>
+        <div className="grid gap-5">
           <AiResultCards loading={loading} message={message} suggestions={suggestions} result={result} canWrite={canWrite} onApply={applySuggestion} />
         </div>
       </div>
