@@ -9,6 +9,7 @@ const corsHeaders = {
 
 const supportedActions = new Set([
   'generate_validated_menu_plan',
+  'repair_menu_plan',
   'generate_week_menu',
   'generate_day_menu',
   'create_recipe',
@@ -36,7 +37,7 @@ const inventoryAwareActions = new Set([
   'explain_missing_items',
 ])
 
-const menuPlanActions = new Set(['generate_validated_menu_plan', 'generate_week_menu', 'generate_day_menu'])
+const menuPlanActions = new Set(['generate_validated_menu_plan', 'repair_menu_plan', 'generate_week_menu', 'generate_day_menu'])
 const mealTimes = ['breakfast', 'school_lunch', 'lunch', 'snack', 'sport_snack', 'dinner', 'evening_snack']
 const modelFallbacks = ['gemini-2.5-flash-lite', 'gemini-2.5-flash']
 
@@ -224,8 +225,9 @@ serve(async (req) => {
       'If no category fits, use category_code "other" and include a warning.',
       'Prefer existing recipe_id values from candidate_recipes.',
       'Do not save data. Return draft suggestions only.',
+      action === 'repair_menu_plan' ? 'Repair only meals marked review_needed or blocked in draft_menu_plan; preserve safe meals unchanged.' : '',
       'Use the requested language for user-facing explanations.',
-    ].join('\n')
+    ].filter(Boolean).join('\n')
 
     const compactContext = compactAiContext(context, candidateRecipes, inventoryForecast, body)
     const userPrompt = JSON.stringify({
@@ -234,6 +236,7 @@ serve(async (req) => {
       language: body?.language || context.profile?.preferred_language || 'en',
       function_contracts: aiFunctionContracts,
       context: compactContext,
+      draft_menu_plan: action === 'repair_menu_plan' ? body?.draft_menu_plan || body?.menu_plan || null : undefined,
       schema_name: isMenuPlanning ? 'MenuPlanAiResponse' : 'ValidatedAiSuggestionsResponse',
     })
 
@@ -283,7 +286,9 @@ serve(async (req) => {
       }))
     }
     const validated = isMenuPlanning
-      ? validateMenuPlanOutput(parsed, context, inventoryForecast, action, candidateRecipes)
+      ? action === 'repair_menu_plan'
+        ? validateRepairedMenuPlanOutput(parsed, context, inventoryForecast, action, candidateRecipes, body?.draft_menu_plan || body?.menu_plan)
+        : validateMenuPlanOutput(parsed, context, inventoryForecast, action, candidateRecipes)
       : validateAiOutput(parsed, context, inventoryForecast, action)
     await createAiAlerts(admin, context, validated.suggestions)
     return json({
@@ -424,6 +429,8 @@ function normalizeAction(action: string | undefined) {
     variety: 'calculate_menu_improvements',
     completeSlots: 'generate_validated_menu_plan',
     generate_validated_menu_plan: 'generate_validated_menu_plan',
+    repairMenuPlan: 'repair_menu_plan',
+    repair_menu_plan: 'repair_menu_plan',
     translate: 'create_recipe',
     productionPlan: 'calculate_menu_improvements',
   }
@@ -757,6 +764,131 @@ function validateMenuPlanOutput(
     purchase_priority: inventoryForecast.purchase_priority,
     tool_architecture: aiFunctionContracts,
   }
+}
+
+function validateRepairedMenuPlanOutput(
+  output: Record<string, unknown>,
+  context: Record<string, unknown>,
+  inventoryForecast: InventoryForecast,
+  action: string,
+  candidateRecipes: Array<Record<string, unknown>>,
+  originalDraft: unknown,
+) {
+  const originalPlan = normalizeMenuPlanDraft(originalDraft)
+  const repaired = validateMenuPlanOutput(output, context, inventoryForecast, action, candidateRecipes)
+  if (!originalPlan) {
+    return {
+      ...repaired,
+      repair_summary: {
+        repaired_slots: 0,
+        preserved_safe_slots: 0,
+        note: 'No original draft menu was provided; validated returned draft only.',
+      },
+    }
+  }
+
+  const returnedPlan = repaired.menu_plan as Record<string, unknown>
+  const returnedDays = new Map(arrayRecords(returnedPlan.days).map((day) => [String(day.date || ''), day]))
+  let repairedSlots = 0
+  let preservedSafeSlots = 0
+  const days = originalPlan.days.map((originalDay) => {
+    const candidateDay = returnedDays.get(String(originalDay.date || ''))
+    const candidateMeals = new Map(arrayRecords(candidateDay?.meals).map((meal) => [slotKey(String(originalDay.date || ''), meal), meal]))
+    const meals = originalDay.meals.map((originalMeal) => {
+      const status = String(originalMeal.status || originalMeal.safety_status || 'review_needed')
+      const key = slotKey(String(originalDay.date || ''), originalMeal)
+      if (status === 'safe') {
+        preservedSafeSlots += 1
+        return originalMeal
+      }
+      const replacement = candidateMeals.get(key)
+      if (replacement) {
+        repairedSlots += 1
+        return replacement
+      }
+      return {
+        ...originalMeal,
+        status: 'review_needed',
+        warnings: [
+          ...arrayStrings(originalMeal.warnings),
+          'Repair did not return a replacement for this problematic slot.',
+        ],
+      }
+    })
+    return { ...originalDay, meals }
+  })
+
+  const suggestions = days.flatMap((day) => day.meals.map((meal) => ({
+    title: meal.recipe_name || 'AI meal suggestion',
+    recipe_id: meal.recipe_id || null,
+    planned_date: day.date,
+    meal_time: meal.meal_time,
+    ingredients: [],
+    category_code: Array.isArray(meal.category_codes) ? meal.category_codes[0] || 'other' : 'other',
+    nutrition: { calories: null, protein_g: null },
+    safety_status: meal.status || 'review_needed',
+    usable: meal.status === 'safe',
+    rotation_status: meal.rotation_status || 'review_needed',
+    nutrition_status: meal.nutrition_status || 'review_needed',
+    inventory_status: meal.inventory_status || 'safe',
+    safety_notes: [...arrayStrings(meal.warnings), String(meal.reason || '')].filter(Boolean),
+    confidence: 0.75,
+  })))
+  const status = suggestions.some((suggestion) => suggestion.safety_status === 'blocked')
+    ? 'blocked'
+    : suggestions.some((suggestion) => suggestion.safety_status === 'review_needed')
+      ? 'review_needed'
+      : 'safe'
+
+  return {
+    ...repaired,
+    menu_plan: {
+      ...returnedPlan,
+      title: String(returnedPlan.title || originalPlan.title || 'Repaired menu draft'),
+      start_date: String(returnedPlan.start_date || originalPlan.start_date || ''),
+      end_date: String(returnedPlan.end_date || originalPlan.end_date || ''),
+      days,
+    },
+    suggestions,
+    usable_suggestions: suggestions.filter((suggestion) => suggestion.usable),
+    validation_summary: {
+      status,
+      reasons: [
+        `Action ${action} validated server-side.`,
+        `${repairedSlots} problematic slots repaired.`,
+        `${preservedSafeSlots} safe slots preserved unchanged.`,
+      ],
+      warnings: validationWarnings(repaired.validation_summary),
+    },
+    repair_summary: {
+      repaired_slots: repairedSlots,
+      preserved_safe_slots: preservedSafeSlots,
+      safe_slots_were_locked: true,
+    },
+  }
+}
+
+function normalizeMenuPlanDraft(value: unknown) {
+  const plan = value as Record<string, unknown> | null
+  if (!plan || typeof plan !== 'object') return null
+  return {
+    title: String(plan.title || ''),
+    start_date: String(plan.start_date || ''),
+    end_date: String(plan.end_date || ''),
+    days: arrayRecords(plan.days).map((day) => ({
+      ...day,
+      date: String(day.date || ''),
+      meals: arrayRecords(day.meals),
+    })),
+  }
+}
+
+function slotKey(date: string, meal: Record<string, unknown>) {
+  return `${date}::${String(meal.meal_time || '')}`
+}
+
+function arrayStrings(value: unknown) {
+  return Array.isArray(value) ? value.map(String) : []
 }
 
 function validateMenuMeal(

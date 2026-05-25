@@ -14,6 +14,7 @@ export interface AiKeyStatus {
   last_error: string | null
   last_rate_limited_at?: string | null
   retry_after_seconds?: number | null
+  message?: string | null
 }
 
 const emptyStatus: AiKeyStatus = {
@@ -60,7 +61,7 @@ export function useAiConnectionTest() {
     setTesting(true)
     try {
       const next = await invoke({ action: 'test_key', api_key: apiKey, model })
-      setMessage(next.key_status === 'valid' ? t('settings.connectionSuccess') : next.last_error || t('settings.connectionFailure'))
+      setMessage(next.message || (next.key_status === 'valid' && !next.configured ? t('settings.keyValidSavePrompt') : next.key_status === 'valid' ? t('settings.connectionSuccess') : next.last_error || t('settings.connectionFailure')))
       return next
     } catch {
       setMessage(t('settings.connectionFailure'))

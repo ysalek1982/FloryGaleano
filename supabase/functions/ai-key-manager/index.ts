@@ -75,7 +75,7 @@ serve(async (req) => {
 
     const test = await testGeminiKey(apiKey, model)
     if (action === 'test_key' && !providedKey) {
-      await upsertStatus(admin, userId, model, test.status, stored?.key_last4 ? String(stored.key_last4) : null, test.error, false)
+      await upsertStatus(admin, userId, model, test.status, stored?.key_last4 ? String(stored.key_last4) : null, test.error, false, test.retryAfterSeconds)
       return json(await getStatus(admin, userId))
     }
 
@@ -103,12 +103,14 @@ serve(async (req) => {
         model,
         is_enabled: false,
         key_status: 'valid',
-      key_last4: last4(apiKey),
-      last_tested_at: new Date().toISOString(),
-      last_rate_limited_at: null,
-      retry_after_seconds: null,
-      configured: false,
-    })
+        key_last4: last4(apiKey),
+        last_tested_at: new Date().toISOString(),
+        last_rate_limited_at: null,
+        retry_after_seconds: null,
+        last_error: null,
+        configured: false,
+        message: 'Key valid. Click Save to enable.',
+      })
     }
 
     const encrypted = await encryptSecret(apiKey)

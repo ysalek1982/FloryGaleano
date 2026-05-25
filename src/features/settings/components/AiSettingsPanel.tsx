@@ -16,11 +16,26 @@ export function AiSettingsPanel({ settings }: { settings: SettingsForm }) {
   const [apiKey, setApiKey] = useState('')
   const [model, setModel] = useState(settings.settings.ai_model || 'gemini-2.5-flash')
   const [availableModels, setAvailableModels] = useState(modelOptions)
+  const [pendingValidTest, setPendingValidTest] = useState(false)
   const hasQuotaIssue = /429|quota|rate limit/i.test(`${ai.message} ${ai.status.last_error || ''}`)
   const hasStoredKeyMetadata = Boolean(ai.status.key_last4)
   const isRateLimited = ai.status.key_status === 'rate_limited'
 
-  const clearKey = () => setApiKey('')
+  const clearKey = () => {
+    setApiKey('')
+    setPendingValidTest(false)
+  }
+  const saveCurrentKey = async () => {
+    await ai.saveKey(apiKey, model)
+    clearKey()
+    settings.updateSettings({ ai_model: model, gemini_enabled: true })
+  }
+  const testCurrentKey = async () => {
+    const next = await ai.testConnection(apiKey || undefined, model)
+    const isValidUnsaved = Boolean(apiKey.trim()) && next?.key_status === 'valid' && next.configured === false
+    setPendingValidTest(isValidUnsaved)
+    if (!isValidUnsaved) clearKey()
+  }
 
   return (
     <Card>
@@ -63,58 +78,75 @@ export function AiSettingsPanel({ settings }: { settings: SettingsForm }) {
             data-testid="settings-gemini-key"
           />
         </Field>
-        <div className="grid gap-2 sm:grid-cols-3">
-          <Button
-            variant="ai"
-            onClick={async () => {
-              await ai.saveKey(apiKey, model)
-              clearKey()
-              settings.updateSettings({ ai_model: model, gemini_enabled: true })
-            }}
-            disabled={ai.testing || !apiKey.trim()}
-            data-testid="settings-ai-save-key"
-          >
-            <KeyRound className="h-4 w-4" />
-            {ai.status.configured ? t('settings.replaceKey') : t('settings.saveKey')}
-          </Button>
+        <div className="grid gap-3 rounded-lg border border-stone-200 bg-stone-50 p-3 md:grid-cols-2">
+          <div>
+            <p className="text-sm font-semibold text-slate-800">{t('settings.testKeySection')}</p>
+            <p className="mt-1 text-xs text-slate-500">{t('settings.testKeySectionBody')}</p>
+          </div>
           <Button
             variant="secondary"
-            onClick={async () => {
-              await ai.testConnection(apiKey || undefined, model)
-              clearKey()
-            }}
+            onClick={testCurrentKey}
             disabled={ai.testing || (!apiKey.trim() && !hasStoredKeyMetadata)}
             data-testid="settings-ai-test"
           >
             {ai.testing ? t('common.loading') : t('ai.testConnection')}
           </Button>
+        </div>
+        {pendingValidTest && (
+          <div className="rounded-lg border border-forest-200 bg-forest-50 p-3 text-sm text-forest-900" data-testid="settings-key-valid-cta">
+            <p className="font-semibold">{t('settings.keyValidSaveTitle')}</p>
+            <p className="mt-1">{t('settings.keyValidSaveBody')}</p>
+            <Button className="mt-3" variant="ai" onClick={saveCurrentKey} disabled={ai.testing || !apiKey.trim()} data-testid="settings-ai-save-tested-key">
+              <KeyRound className="h-4 w-4" />
+              {t('settings.saveKeyToEnableAi')}
+            </Button>
+          </div>
+        )}
+        <div className="grid gap-3 rounded-lg border border-stone-200 p-3 md:grid-cols-2">
+          <div>
+            <p className="text-sm font-semibold text-slate-800">{t('settings.saveKeySection')}</p>
+            <p className="mt-1 text-xs text-slate-500">{t('settings.saveKeySectionBody')}</p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Button
+              variant="ai"
+              onClick={saveCurrentKey}
+              disabled={ai.testing || !apiKey.trim()}
+              data-testid="settings-ai-save-key"
+            >
+              <KeyRound className="h-4 w-4" />
+              {ai.status.configured ? t('settings.replaceKey') : t('settings.saveKey')}
+            </Button>
+            <Button
+              variant="danger"
+              onClick={async () => {
+                await ai.deleteKey()
+                clearKey()
+                settings.updateSettings({ gemini_enabled: false })
+              }}
+              disabled={ai.testing || !hasStoredKeyMetadata}
+              data-testid="settings-ai-delete-key"
+            >
+              <Trash2 className="h-4 w-4" />
+              {t('settings.deleteKey')}
+            </Button>
+          </div>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2">
           <Button
-            variant="danger"
+            variant="secondary"
             onClick={async () => {
-              await ai.deleteKey()
-              clearKey()
-              settings.updateSettings({ gemini_enabled: false })
+              const models = await ai.listModels(apiKey || undefined, model)
+              if (models.length) setAvailableModels(Array.from(new Set([...models, ...modelOptions])))
+              if (ai.status.key_status !== 'valid') clearKey()
             }}
-            disabled={ai.testing || !hasStoredKeyMetadata}
-            data-testid="settings-ai-delete-key"
+            disabled={ai.testing || (!apiKey.trim() && !hasStoredKeyMetadata)}
+            data-testid="settings-refresh-models"
           >
-            <Trash2 className="h-4 w-4" />
-            {t('settings.deleteKey')}
+            <RefreshCw className="h-4 w-4" />
+            {t('settings.refreshModels')}
           </Button>
         </div>
-        <Button
-          variant="secondary"
-          onClick={async () => {
-            const models = await ai.listModels(apiKey || undefined, model)
-            if (models.length) setAvailableModels(Array.from(new Set([...models, ...modelOptions])))
-            clearKey()
-          }}
-          disabled={ai.testing || (!apiKey.trim() && !hasStoredKeyMetadata)}
-          data-testid="settings-refresh-models"
-        >
-          <RefreshCw className="h-4 w-4" />
-          {t('settings.refreshModels')}
-        </Button>
         {ai.message && <p className="rounded-md bg-stone-50 p-3 text-sm text-slate-700" data-testid="settings-ai-result">{ai.message}</p>}
         {ai.status.last_error && <p className="rounded-md bg-amber-50 p-3 text-sm text-amber-800">{ai.status.last_error}</p>}
         {(hasQuotaIssue || isRateLimited) && (

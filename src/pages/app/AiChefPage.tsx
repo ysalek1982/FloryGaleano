@@ -35,6 +35,7 @@ export default function AiChefPage() {
     wasteReduction: 'reduce_waste_menu',
     purchasePriority: 'purchase_priority',
     explainMissing: 'explain_missing_items',
+    repairMenuPlan: 'repair_menu_plan',
   }
   const keyNeedsSetup = !aiStatus.status.configured && ['not_configured', 'deleted'].includes(aiStatus.status.key_status)
   const keyNeedsRepair = !aiStatus.status.configured && ['invalid', 'test_failed'].includes(aiStatus.status.key_status)

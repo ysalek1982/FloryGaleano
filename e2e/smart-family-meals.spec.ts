@@ -461,6 +461,57 @@ test('Gemini invalid key state stays secret and guides repair', async ({ page })
   await expect(page.getByTestId('ai-replace-key')).toBeVisible()
 })
 
+test('Gemini valid test requires saving before AI is enabled', async ({ page }) => {
+  let status = {
+    provider: 'gemini',
+    model: 'gemini-2.5-flash',
+    is_enabled: false,
+    configured: false,
+    key_status: 'not_configured',
+    key_last4: null as string | null,
+    last_tested_at: null as string | null,
+    last_error: null as string | null,
+  }
+  await page.route('**/functions/v1/ai-key-manager', async (route) => {
+    const body = JSON.parse(route.request().postData() || '{}')
+    if (body.action === 'test_key') {
+      status = {
+        ...status,
+        key_status: 'valid',
+        key_last4: '7777',
+        last_tested_at: new Date().toISOString(),
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ...status, message: 'Key valid. Click Save to enable.' }),
+      })
+      return
+    }
+    if (body.action === 'save_key') {
+      status = {
+        ...status,
+        is_enabled: true,
+        configured: true,
+        key_status: 'valid',
+        key_last4: '7777',
+        last_tested_at: new Date().toISOString(),
+      }
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(status) })
+  })
+  await login(page)
+  await page.goto('/app/settings')
+  await page.getByTestId('settings-gemini-key').fill('valid-test-key-7777')
+  await page.getByTestId('settings-ai-test').click()
+  await expect(page.getByTestId('settings-ai-result')).toContainText('Key valid. Click Save to enable.')
+  await expect(page.getByTestId('settings-key-valid-cta')).toContainText('Save key to enable AI')
+  await expect(page.getByText('valid-test-key-7777')).toHaveCount(0)
+  await page.getByTestId('settings-ai-save-tested-key').click()
+  await expect(page.getByText('**** 7777')).toBeVisible()
+  await expect(page.getByText('Yes').first()).toBeVisible()
+})
+
 test('Gemini quota limit explains HTTP 429 without exposing the key', async ({ page }) => {
   let status = {
     provider: 'gemini',
@@ -535,6 +586,47 @@ test('AI Chef explains Gemini rate limit as retryable review state', async ({ pa
   await expect(page.getByTestId('ai-key-rate-limited-card')).toContainText('Gemini quota is temporarily limited')
   await page.getByTestId('ai-action-weeklyMenu').click()
   await expect(page.getByTestId('ai-rate-limited-result')).toContainText('HTTP 429')
+})
+
+test('AI Chef repair menu draft keeps safe slots locked', async ({ page }) => {
+  await mockAiKeyConfigured(page)
+  await page.route('**/functions/v1/ai-chef', async (route) => {
+    const body = JSON.parse(route.request().postData() || '{}')
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        configured: true,
+        action: body.action || 'repair_menu_plan',
+        menu_plan: {
+          title: 'Repaired menu draft',
+          start_date: '2026-05-25',
+          end_date: '2026-05-25',
+          days: [
+            {
+              date: '2026-05-25',
+              meals: [
+                { meal_time: 'breakfast', recipe_name: 'Existing Safe Breakfast', status: 'safe', warnings: [] },
+                { meal_time: 'dinner', recipe_name: 'Safe Rice Bowl Repair', status: 'safe', warnings: [] },
+              ],
+            },
+          ],
+        },
+        suggestions: [
+          { title: 'Existing Safe Breakfast', safety_status: 'safe', usable: true, rotation_status: 'allowed', nutrition_status: 'available' },
+          { title: 'Safe Rice Bowl Repair', safety_status: 'safe', usable: true, rotation_status: 'allowed', nutrition_status: 'available' },
+        ],
+        validation_summary: { status: 'safe', reasons: ['1 problematic slots repaired.', '1 safe slots preserved unchanged.'], warnings: [] },
+        repair_summary: { repaired_slots: 1, preserved_safe_slots: 1, safe_slots_were_locked: true },
+      }),
+    })
+  })
+  await login(page)
+  await page.goto('/app/ai-chef')
+  await page.getByTestId('ai-action-repairMenuPlan').click()
+  await expect(page.getByTestId('ai-menu-plan-grid')).toContainText('Existing Safe Breakfast')
+  await expect(page.getByTestId('ai-menu-plan-grid')).toContainText('Safe Rice Bowl Repair')
+  await expect(page.getByTestId('ai-inventory-validation')).toContainText('1 safe slots preserved unchanged.')
 })
 
 test('Gemini key delete returns AI Chef to setup state', async ({ page }) => {

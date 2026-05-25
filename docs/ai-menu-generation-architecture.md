@@ -13,6 +13,10 @@ Smart Family Meals uses Gemini only from Supabase Edge Functions. The browser ne
 7. Return a draft menu with safe, review_needed, or blocked statuses.
 8. The frontend can apply only safe suggestions automatically; review-needed requires confirmation and blocked suggestions cannot be applied.
 
+## Repairing Draft Menus
+
+`repair_menu_plan` accepts an existing draft menu and repairs only slots whose status is `review_needed` or `blocked`. Safe slots are locked and preserved unchanged. The repaired menu is returned as a draft and is not saved automatically.
+
 ## Candidate-First Planning
 
 The Edge Function scores and caps recipe candidates before Gemini sees them. Candidates are limited to family-accessible recipes and include:
