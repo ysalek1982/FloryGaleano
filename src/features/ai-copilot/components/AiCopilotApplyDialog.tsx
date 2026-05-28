@@ -8,7 +8,7 @@ import { useAppData } from '../../../lib/AppState'
 import type { MealTime } from '../../../lib/types'
 import { todayIso } from '../../../lib/utils'
 import type { AiCopilotSuggestion } from '../types'
-import { canApplyCopilotSuggestion, suggestionStatus } from '../utils/aiCopilotGuards'
+import { canApplyCopilotSuggestion, getApplyBlockReasonKey, suggestionStatus } from '../utils/aiCopilotGuards'
 
 export default function AiCopilotApplyDialog({
   suggestion,
@@ -28,6 +28,13 @@ export default function AiCopilotApplyDialog({
   const applicable = canApplyCopilotSuggestion(suggestion, canWrite)
   const needsReason = status === 'review_needed'
   const dataPayload = suggestion.data || {}
+  const blockReasonKey = getApplyBlockReasonKey(suggestion, canWrite)
+  const applyPreview = {
+    title: suggestion.title,
+    status,
+    apply_option: suggestion.apply_option || 'no_apply_available',
+    data: dataPayload,
+  }
 
   const apply = () => {
     if (!applicable) return
@@ -78,13 +85,24 @@ export default function AiCopilotApplyDialog({
     <Dialog title={t('aiCopilot.applyDialogTitle')} onClose={onClose}>
       <div className="grid gap-4" data-testid="ai-copilot-apply-dialog">
         <p className="text-sm text-slate-600">{t('aiCopilot.applyDialogBody')}</p>
-        <pre className="max-h-56 overflow-auto rounded-md bg-stone-50 p-3 text-xs text-slate-700">{JSON.stringify({
-          title: suggestion.title,
-          status,
-          apply_option: suggestion.apply_option,
-          data: dataPayload,
-        }, null, 2)}</pre>
-        {!applicable && <p className="rounded-md bg-amber-50 p-3 text-sm text-amber-800">{t('aiCopilot.applyMissingData')}</p>}
+        <div className="rounded-md border border-stone-200 bg-stone-50 p-3">
+          <p className="text-sm font-semibold text-slate-900">{t('aiCopilot.whatWillApply')}</p>
+          <dl className="mt-2 grid gap-2 text-sm text-slate-700">
+            <div className="flex justify-between gap-3">
+              <dt>{t('aiCopilot.requiredUserAction')}</dt>
+              <dd className="font-semibold">{String(applyPreview.apply_option)}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt>{t('common.status')}</dt>
+              <dd className="font-semibold">{status}</dd>
+            </div>
+          </dl>
+        </div>
+        <details className="rounded-md border border-stone-200 bg-white p-3">
+          <summary className="cursor-pointer text-sm font-semibold text-slate-900">{t('aiCopilot.advancedPayload')}</summary>
+          <pre className="mt-3 max-h-56 overflow-auto rounded-md bg-stone-50 p-3 text-xs text-slate-700">{JSON.stringify(applyPreview, null, 2)}</pre>
+        </details>
+        {!applicable && blockReasonKey && <p className="rounded-md bg-amber-50 p-3 text-sm text-amber-800">{t(blockReasonKey)}</p>}
         {needsReason && (
           <Field label={t('aiCopilot.reviewReason')}>
             <textarea className="input min-h-24" value={reason} onChange={(event) => setReason(event.target.value)} data-testid="ai-copilot-review-reason" />

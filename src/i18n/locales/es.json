@@ -594,6 +594,22 @@
     "reviewNeededStructuredData": "Esta sugerencia IA necesita datos estructurados de receta o menú antes de aplicarse con seguridad.",
     "actionTemplates": "Plantillas guiadas",
     "quickShortcuts": "Accesos rápidos IA",
+    "modelStatus": "Estado de clave y modelo",
+    "recommendedFirstAction": "Primera acción recomendada",
+    "tabDescriptions": {
+      "menu": "Planifica o repara menús semanales usando recetas candidatas y validación segura del servidor.",
+      "recipe": "Borradores de variaciones seguras, sustituciones y mejoras de instrucciones para cocina.",
+      "inventory": "Usa datos de despensa y freezer para reducir desperdicio, priorizar compras y explicar faltantes.",
+      "safety": "Enfócate en riesgos de alergia, nutrición y producción antes de servir.",
+      "custom": "Haz una pregunta personalizada con el contexto familiar actual. Los resultados aún requieren validación."
+    },
+    "recommendedActions": {
+      "menu": "Generar semana validada",
+      "recipe": "Revisar seguridad",
+      "inventory": "Priorizar compras",
+      "safety": "Explicar brechas",
+      "custom": "Empezar con una pregunta concreta"
+    },
     "tabs": {
       "menuPlanning": "Planificación de Menús",
       "recipeHelp": "Ayuda de Recetas",
@@ -625,6 +641,14 @@
     "applyDialogTitle": "Revisar acción de IA",
     "applyDialogBody": "Confirma exactamente qué se creará o actualizará. Las sugerencias inseguras se bloquean.",
     "applyMissingData": "Esta sugerencia no tiene datos estructurados suficientes, por eso no puede aplicarse automáticamente.",
+    "applyBlockedUnsafe": "Esta sugerencia está bloqueada por validación de seguridad y no se puede aplicar.",
+    "applyNoAction": "Esta sugerencia es solo explicativa y no tiene acción directa.",
+    "openRecipeBuilderRequired": "Los borradores de recetas nuevas deben abrir el constructor de recetas; no se crean en silencio.",
+    "whatWillApply": "¿Qué se aplicará?",
+    "applyOptionSummary": "Listo para aplicar: {{option}}.",
+    "missingStructuredPayload": "El payload estructurado falta o está incompleto.",
+    "advancedPayload": "Payload avanzado",
+    "close": "Cerrar Copiloto IA",
     "reviewReason": "Motivo de revisión",
     "confirmApply": "Confirmar aplicación",
     "appliedFromCopilot": "Aplicado desde Copiloto IA después de validación.",

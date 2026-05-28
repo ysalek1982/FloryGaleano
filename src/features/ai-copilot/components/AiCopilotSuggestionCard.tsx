@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import { Badge, Button } from '../../shared/chefUi'
 import type { AiCopilotSuggestion } from '../types'
-import { canApplyCopilotSuggestion, suggestionStatus } from '../utils/aiCopilotGuards'
+import { canApplyCopilotSuggestion, getApplyBlockReasonKey, suggestionStatus } from '../utils/aiCopilotGuards'
 
 export default function AiCopilotSuggestionCard({
   suggestion,
@@ -25,6 +25,8 @@ export default function AiCopilotSuggestionCard({
     ...(suggestion.safety_notes || []),
   ].filter(Boolean)
   const applicable = canApplyCopilotSuggestion(suggestion, canWrite)
+  const blockReasonKey = getApplyBlockReasonKey(suggestion, canWrite)
+  const hasDataPayload = suggestion.data && Object.keys(suggestion.data).length > 0
 
   return (
     <article className="rounded-lg border border-stone-200 bg-white p-4" data-testid="ai-copilot-suggestion-card">
@@ -41,6 +43,17 @@ export default function AiCopilotSuggestionCard({
         <Badge status={suggestion.nutrition_status || 'review_needed'}>{t('ai.nutritionValidation')}: {suggestion.nutrition_status || 'review_needed'}</Badge>
         <Badge status={suggestion.inventory_status || 'review_needed'}>{t('ai.inventoryValidation')}: {suggestion.inventory_status || 'review_needed'}</Badge>
       </div>
+      <div className="mt-3 rounded-md border border-stone-200 bg-stone-50 p-3 text-sm text-slate-700">
+        <p className="font-semibold text-slate-900">{t('aiCopilot.whatWillApply')}</p>
+        <p className="mt-1">
+          {applicable
+            ? t('aiCopilot.applyOptionSummary', { option: suggestion.apply_option })
+            : t(blockReasonKey || 'aiCopilot.applyMissingData')}
+        </p>
+        {!hasDataPayload && (
+          <p className="mt-1 text-amber-700">{t('aiCopilot.missingStructuredPayload')}</p>
+        )}
+      </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <Button type="button" variant="secondary" disabled={!applicable} onClick={() => onApply(suggestion)} data-testid="ai-copilot-apply">
           {applicable ? t('aiCopilot.applySuggestion') : t('aiCopilot.cannotApply')}
@@ -56,14 +69,18 @@ export default function AiCopilotSuggestionCard({
         </Button>
       </div>
       {expanded && (
-        <div className="mt-3 rounded-md bg-stone-50 p-3 text-sm text-slate-700">
+        <div className="mt-3 grid gap-3 rounded-md bg-stone-50 p-3 text-sm text-slate-700">
           <p className="font-semibold">{t('aiCopilot.requiredUserAction')}</p>
           <p className="mt-1">{suggestion.apply_option || 'no_apply_available'}</p>
           {warnings.length > 0 && (
-            <ul className="mt-2 list-disc space-y-1 pl-5">
+            <ul className="list-disc space-y-1 pl-5">
               {warnings.map((warning, index) => <li key={`${warning}-${index}`}>{warning}</li>)}
             </ul>
           )}
+          <details>
+            <summary className="cursor-pointer font-semibold">{t('aiCopilot.advancedPayload')}</summary>
+            <pre className="mt-2 max-h-52 overflow-auto rounded-md bg-white p-3 text-xs">{JSON.stringify(suggestion.data || {}, null, 2)}</pre>
+          </details>
         </div>
       )}
     </article>

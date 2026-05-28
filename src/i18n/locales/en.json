@@ -594,6 +594,22 @@
     "reviewNeededStructuredData": "This AI suggestion needs structured recipe or menu data before it can be applied safely.",
     "actionTemplates": "Guided action templates",
     "quickShortcuts": "AI quick shortcuts",
+    "modelStatus": "Key and model status",
+    "recommendedFirstAction": "Recommended first action",
+    "tabDescriptions": {
+      "menu": "Plan or repair weekly menus using candidate recipes and server-side safety validation.",
+      "recipe": "Draft safer recipe variations, substitutions, and chef-friendly instruction improvements.",
+      "inventory": "Use pantry and freezer data to reduce waste, prioritize purchases, and explain missing items.",
+      "safety": "Focus on allergy, nutrition, and production risks before a plan is served.",
+      "custom": "Ask a custom question with the current family context. Results still require validation before use."
+    },
+    "recommendedActions": {
+      "menu": "Generate validated week",
+      "recipe": "Check safety",
+      "inventory": "Prioritize purchases",
+      "safety": "Explain gaps",
+      "custom": "Start with a specific chef question"
+    },
     "tabs": {
       "menuPlanning": "Menu Planning",
       "recipeHelp": "Recipe Help",
@@ -625,6 +641,14 @@
     "applyDialogTitle": "Review AI apply action",
     "applyDialogBody": "Confirm exactly what will be created or updated. Unsafe suggestions are blocked.",
     "applyMissingData": "This suggestion is missing structured data, so it cannot be applied automatically.",
+    "applyBlockedUnsafe": "This suggestion is blocked by safety validation and cannot be applied.",
+    "applyNoAction": "This suggestion is explanation-only and has no direct apply action.",
+    "openRecipeBuilderRequired": "New AI recipe drafts must open the Recipe Builder first; they are not created silently.",
+    "whatWillApply": "What will be applied?",
+    "applyOptionSummary": "Ready to apply: {{option}}.",
+    "missingStructuredPayload": "Structured payload is missing or incomplete.",
+    "advancedPayload": "Advanced payload",
+    "close": "Close AI Copilot",
     "reviewReason": "Review reason",
     "confirmApply": "Confirm apply",
     "appliedFromCopilot": "Applied from AI Copilot after validation.",

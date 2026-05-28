@@ -20,7 +20,7 @@ export default function AiCopilotPanel() {
     <div className="grid gap-4">
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-ai-700">{t('aiCopilot.eyebrow')}</p>
-        <h2 className="font-serif text-3xl font-semibold text-slate-950">{t('aiCopilot.title')}</h2>
+        <h2 id="ai-copilot-title" className="font-serif text-3xl font-semibold text-slate-950">{t('aiCopilot.title')}</h2>
         <p className="mt-2 text-sm text-slate-600">{t('aiCopilot.subtitle')}</p>
       </div>
       <AiCopilotStatusBanner />

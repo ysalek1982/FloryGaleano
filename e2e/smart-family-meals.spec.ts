@@ -548,7 +548,7 @@ test('Gemini quota limit explains HTTP 429 without exposing the key', async ({ p
   await expect(page.getByText('**** 4290')).toBeVisible()
 })
 
-test('AI Chef explains Gemini rate limit as retryable review state', async ({ page }) => {
+test('AI Chef explains Gemini rate limit and disables action cards during cooldown', async ({ page }) => {
   await page.route('**/functions/v1/ai-key-manager', async (route) => {
     await route.fulfill({
       status: 200,
@@ -567,25 +567,11 @@ test('AI Chef explains Gemini rate limit as retryable review state', async ({ pa
       }),
     })
   })
-  await page.route('**/functions/v1/ai-chef', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        configured: false,
-        code: 'gemini_rate_limited',
-        message: 'Gemini quota or rate limit was reached for gemini-2.5-flash (HTTP 429).',
-        suggested_action: 'Wait for quota to reset or switch model in Settings.',
-        validation_summary: { status: 'review_needed', reasons: ['Gemini quota reached.'], warnings: ['Retry after 90 seconds.'] },
-        suggestions: [],
-      }),
-    })
-  })
   await login(page)
   await page.goto('/app/ai-chef')
   await expect(page.getByTestId('ai-key-rate-limited-card')).toContainText('Gemini quota is temporarily limited')
-  await page.getByTestId('ai-action-weeklyMenu').click()
-  await expect(page.getByTestId('ai-rate-limited-result')).toContainText('HTTP 429')
+  await expect(page.getByTestId('ai-action-weeklyMenu')).toBeDisabled()
+  await expect(page.getByTestId('ai-template-action-weeklyMenu')).toBeDisabled()
 })
 
 test('AI Chef repair menu draft keeps safe slots locked', async ({ page }) => {
@@ -909,6 +895,60 @@ test('global AI Copilot opens from AppShell with setup guidance', async ({ page 
   await expect(page.getByTestId('ai-copilot-drawer')).toBeVisible()
   await expect(page.getByTestId('ai-copilot-status')).toContainText('Setup needed')
   await expect(page.getByTestId('ai-copilot-go-settings')).toBeVisible()
+  await page.getByTestId('ai-copilot-go-settings').click()
+  await expect(page).toHaveURL(/\/app\/settings/)
+})
+
+test('AI Copilot drawer closes with Escape', async ({ page }) => {
+  await page.route('**/functions/v1/ai-key-manager', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        is_enabled: false,
+        configured: false,
+        key_status: 'not_configured',
+        key_last4: null,
+        last_tested_at: null,
+        last_error: null,
+      }),
+    })
+  })
+  await login(page)
+  await page.locator('select').last().selectOption('en')
+  await page.getByTestId('app-shell-ai-copilot').click()
+  await expect(page.getByTestId('ai-copilot-drawer')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('ai-copilot-drawer')).toHaveCount(0)
+})
+
+test('AI Copilot drawer is usable on a mobile viewport', async ({ page }) => {
+  await page.route('**/functions/v1/ai-key-manager', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        is_enabled: false,
+        configured: false,
+        key_status: 'not_configured',
+        key_last4: null,
+        last_tested_at: null,
+        last_error: null,
+      }),
+    })
+  })
+  await login(page)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.getByTestId('app-shell-ai-copilot').click()
+  const drawer = page.getByTestId('ai-copilot-drawer')
+  await expect(drawer).toBeVisible()
+  await expect(page.getByTestId('ai-copilot-close')).toBeVisible()
+  const box = await drawer.boundingBox()
+  expect(box?.width).toBeGreaterThan(360)
 })
 
 test('rate-limited Copilot blocks repeated AI actions', async ({ page }) => {
@@ -936,6 +976,44 @@ test('rate-limited Copilot blocks repeated AI actions', async ({ page }) => {
   await expect(page.getByTestId('ai-copilot-status')).toContainText('Rate limited')
   await expect(page.getByTestId('ai-copilot-retry-after')).toContainText('120')
   await expect(page.getByTestId('ai-copilot-action-dashboard-summarizeRisks')).toBeDisabled()
+})
+
+test('AI Copilot review-needed apply requires a confirmation reason', async ({ page }) => {
+  await mockAiKeyConfigured(page)
+  await page.route('**/functions/v1/ai-chef', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        status: 'review_needed',
+        page_id: 'dashboard',
+        action: 'suggest_next_action',
+        title: 'Purchase priority',
+        summary: 'Review before adding this shopping item.',
+        suggestions: [{
+          id: 'review-shopping-item',
+          type: 'shopping',
+          title: 'Add oats to shopping list',
+          reason: 'Breakfast plan needs a review because pantry stock is ambiguous.',
+          status: 'review_needed',
+          confidence: 0.75,
+          warnings: ['Confirm brand and allergen traces.'],
+          data: { ingredient_id: 'review-ingredient-id', quantity: 250, unit: 'g' },
+          apply_option: 'create_shopping_item',
+        }],
+        validation_summary: { status: 'review_needed', reasons: ['Needs human review.'], warnings: [] },
+      }),
+    })
+  })
+  await login(page)
+  await page.locator('select').last().selectOption('en')
+  await page.getByTestId('app-shell-ai-copilot').click()
+  await page.getByTestId('ai-copilot-action-dashboard-nextAction').click()
+  await expect(page.getByTestId('ai-copilot-suggestion-card')).toContainText('Add oats')
+  await page.getByTestId('ai-copilot-apply').click()
+  await expect(page.getByTestId('ai-copilot-confirm-apply')).toBeDisabled()
+  await page.getByTestId('ai-copilot-review-reason').fill('Chef reviewed allergen risk.')
+  await expect(page.getByTestId('ai-copilot-confirm-apply')).toBeEnabled()
 })
 
 test('Recipes page contextual Copilot sends recipe context and blocks generic apply', async ({ page }) => {
@@ -978,6 +1056,34 @@ test('Recipes page contextual Copilot sends recipe context and blocks generic ap
   await expect(page.getByTestId('ai-copilot-suggestion-card')).toContainText('Improve recipe instructions')
   await expect(page.getByTestId('ai-copilot-apply')).toBeDisabled()
   expect(sawRecipeContext).toBe(true)
+})
+
+test('Menu Planner contextual Copilot sends planner page context', async ({ page }) => {
+  await mockAiKeyConfigured(page)
+  let sawPlannerContext = false
+  await page.route('**/functions/v1/ai-chef', async (route) => {
+    const request = route.request().postDataJSON() as { page_context?: { page_id?: string }; action?: string }
+    sawPlannerContext = request.page_context?.page_id === 'menu_planner' && request.action === 'generate_validated_menu_plan'
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        status: 'safe',
+        page_id: 'menu_planner',
+        action: 'generate_validated_menu_plan',
+        title: 'Validated week',
+        summary: 'Planner context received.',
+        suggestions: [],
+        validation_summary: { status: 'safe', reasons: ['Validated server-side.'], warnings: [] },
+      }),
+    })
+  })
+  await login(page)
+  await page.locator('select').last().selectOption('en')
+  await page.goto('/app/menu-planner')
+  await page.getByTestId('planner-ai-complete-week').click()
+  await expect(page.getByTestId('ai-copilot-result')).toContainText('Planner context received')
+  expect(sawPlannerContext).toBe(true)
 })
 
 test('/app/ai-chef guided tabs render action templates', async ({ page }) => {

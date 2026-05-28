@@ -52,7 +52,19 @@ export function canApplyCopilotSuggestion(suggestion: AiCopilotSuggestion, canWr
     return Boolean(suggestion.data.ingredient_id && suggestion.data.quantity)
   }
   if (suggestion.apply_option === 'apply_recipe_patch') {
-    return Boolean(suggestion.data.recipe_id || suggestion.data.recipe_payload)
+    return Boolean(suggestion.data.recipe_id)
   }
-  return suggestion.apply_option === 'create_alert'
+  return false
+}
+
+export function getApplyBlockReasonKey(suggestion: AiCopilotSuggestion, canWrite: boolean) {
+  if (!canWrite) return 'roles.readOnly'
+  const status = suggestionStatus(suggestion)
+  if (status === 'blocked') return 'aiCopilot.applyBlockedUnsafe'
+  if (!suggestion.apply_option || suggestion.apply_option === 'no_apply_available') return 'aiCopilot.applyNoAction'
+  if (suggestion.apply_option === 'apply_recipe_patch' && suggestion.data?.recipe_payload && !suggestion.data?.recipe_id) {
+    return 'aiCopilot.openRecipeBuilderRequired'
+  }
+  if (!canApplyCopilotSuggestion(suggestion, canWrite)) return 'aiCopilot.applyMissingData'
+  return ''
 }

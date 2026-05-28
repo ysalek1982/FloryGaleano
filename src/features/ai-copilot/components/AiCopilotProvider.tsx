@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useCallback, useMemo, useState } from 'react'
+import { lazy, Suspense, useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useAiConnectionTest } from '../../settings/hooks/useAiConnectionTest'
@@ -9,7 +9,8 @@ import { useAiPageContext } from '../hooks/useAiPageContext'
 import type { AiCopilotActionDefinition, AiCopilotPageContext, AiCopilotResponse } from '../types'
 import { getAiCopilotAction } from '../utils/aiCopilotRegistry'
 import { getCopilotAvailability } from '../utils/aiCopilotGuards'
-import AiCopilotDrawer from './AiCopilotDrawer'
+
+const AiCopilotDrawer = lazy(() => import('./AiCopilotDrawer'))
 
 export default function AiCopilotProvider({ children }: { children: ReactNode }) {
   const { t } = useTranslation()
@@ -88,6 +89,11 @@ export default function AiCopilotProvider({ children }: { children: ReactNode })
       if (action) void runAction(action, nextContext)
     }
   }, [resolveContext, runAction])
+  const closeCopilot = useCallback(() => setOpen(false), [])
+  const clearResult = useCallback(() => setResult(null), [])
+  const testAgain = useCallback(async () => {
+    await aiStatus.testConnection(undefined, aiStatus.status.model)
+  }, [aiStatus])
 
   const value = useMemo(() => ({
     open,
@@ -98,18 +104,20 @@ export default function AiCopilotProvider({ children }: { children: ReactNode })
     aiStatus: aiStatus.status,
     testing: aiStatus.testing,
     openCopilot,
-    closeCopilot: () => setOpen(false),
+    closeCopilot,
     runAction,
-    clearResult: () => setResult(null),
-    testAgain: async () => {
-      await aiStatus.testConnection(undefined, aiStatus.status.model)
-    },
-  }), [aiStatus, loading, message, open, openCopilot, pageContext, result, runAction])
+    clearResult,
+    testAgain,
+  }), [aiStatus.status, aiStatus.testing, clearResult, closeCopilot, loading, message, open, openCopilot, pageContext, result, runAction, testAgain])
 
   return (
     <AiCopilotContext.Provider value={value}>
       {children}
-      <AiCopilotDrawer />
+      {open && (
+        <Suspense fallback={null}>
+          <AiCopilotDrawer />
+        </Suspense>
+      )}
     </AiCopilotContext.Provider>
   )
 }
