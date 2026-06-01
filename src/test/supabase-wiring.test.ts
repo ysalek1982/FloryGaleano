@@ -33,15 +33,18 @@ describe('Supabase production wiring', () => {
 
   it('guards auth redirects and persists app CRUD through Supabase upserts', () => {
     const router = read('src/app/AppRouter.tsx')
+    const shell = read('src/app/AppShell.tsx')
     const protectedRoute = read('src/app/ProtectedRoute.tsx')
     const database = read('src/lib/database.ts')
     expect(protectedRoute).toContain('<Navigate to="/login" replace />')
     expect(router).toContain('<Navigate to="/app/dashboard" replace />')
     expect(router).toContain('lazy(() => import')
+    expect(shell).toContain('AiConnectionProvider')
     expect(database).toContain('persistAppDataDiff')
     expect(database).toContain("'ingredients'")
     expect(database).toContain("'recipes'")
     expect(database).toContain('upsertChanged')
+    expect(database).toContain('persistenceQueue')
   })
 
   it('defines secure ai-chef Edge Function with supported actions', () => {

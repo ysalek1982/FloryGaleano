@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
+import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { isSupabaseConfigured, supabase } from '../../../lib/supabase'
@@ -17,6 +18,17 @@ export interface AiKeyStatus {
   message?: string | null
 }
 
+export interface AiConnectionState {
+  message: string
+  testing: boolean
+  status: AiKeyStatus
+  refresh: () => Promise<void>
+  testConnection: (apiKey?: string, model?: string) => Promise<AiKeyStatus | null>
+  saveKey: (apiKey: string, model: string) => Promise<AiKeyStatus | null>
+  deleteKey: () => Promise<AiKeyStatus | null>
+  listModels: (apiKey?: string, model?: string) => Promise<string[]>
+}
+
 const emptyStatus: AiKeyStatus = {
   provider: 'gemini',
   model: 'gemini-2.5-flash',
@@ -28,11 +40,23 @@ const emptyStatus: AiKeyStatus = {
   last_error: null,
 }
 
-export function useAiConnectionTest() {
+const AiConnectionContext = createContext<AiConnectionState | null>(null)
+
+function useAiConnectionState(): AiConnectionState {
   const { t } = useTranslation()
   const [status, setStatus] = useState<AiKeyStatus>(emptyStatus)
   const [message, setMessage] = useState('')
-  const [testing, setTesting] = useState(false)
+  const [pendingOperations, setPendingOperations] = useState(0)
+  const refreshInFlight = useRef<Promise<void> | null>(null)
+
+  const trackOperation = useCallback(async <T,>(task: () => Promise<T>) => {
+    setPendingOperations((count) => count + 1)
+    try {
+      return await task()
+    } finally {
+      setPendingOperations((count) => Math.max(0, count - 1))
+    }
+  }, [])
 
   const invoke = useCallback(async (body: Record<string, unknown>, updateStatus = true) => {
     if (!isSupabaseConfigured || !supabase) throw new Error('Supabase is not configured')
@@ -43,11 +67,18 @@ export function useAiConnectionTest() {
   }, [])
 
   const refresh = useCallback(async () => {
-    try {
-      await invoke({ action: 'get_status' })
-    } catch {
-      setStatus(emptyStatus)
+    if (!refreshInFlight.current) {
+      refreshInFlight.current = (async () => {
+        try {
+          await invoke({ action: 'get_status' })
+        } catch {
+          setStatus(emptyStatus)
+        } finally {
+          refreshInFlight.current = null
+        }
+      })()
     }
+    await refreshInFlight.current
   }, [invoke])
 
   useEffect(() => {
@@ -57,62 +88,66 @@ export function useAiConnectionTest() {
     return () => window.clearTimeout(timer)
   }, [refresh])
 
-  const testConnection = async (apiKey?: string, model = status.model) => {
-    setTesting(true)
-    try {
+  const testConnection = useCallback(async (apiKey?: string, model = status.model) => {
+    return trackOperation(async () => {
       const next = await invoke({ action: 'test_key', api_key: apiKey, model })
       setMessage(next.message || (next.key_status === 'valid' && !next.configured ? t('settings.keyValidSavePrompt') : next.key_status === 'valid' ? t('settings.connectionSuccess') : next.last_error || t('settings.connectionFailure')))
       return next
-    } catch {
+    }).catch(() => {
       setMessage(t('settings.connectionFailure'))
       return null
-    } finally {
-      setTesting(false)
-    }
-  }
+    })
+  }, [invoke, status.model, t, trackOperation])
 
-  const saveKey = async (apiKey: string, model: string) => {
-    setTesting(true)
-    try {
+  const saveKey = useCallback(async (apiKey: string, model: string) => {
+    return trackOperation(async () => {
       const next = await invoke({ action: 'save_key', api_key: apiKey, model })
       setMessage(next.key_status === 'valid' ? t('settings.geminiKeySaved') : next.last_error || t('settings.connectionFailure'))
       return next
-    } catch {
+    }).catch(() => {
       setMessage(t('settings.connectionFailure'))
       return null
-    } finally {
-      setTesting(false)
-    }
-  }
+    })
+  }, [invoke, t, trackOperation])
 
-  const deleteKey = async () => {
-    setTesting(true)
-    try {
+  const deleteKey = useCallback(async () => {
+    return trackOperation(async () => {
       const next = await invoke({ action: 'delete_key', model: status.model })
       setMessage(t('settings.geminiKeyDeleted'))
       return next
-    } catch {
+    }).catch(() => {
       setMessage(t('settings.connectionFailure'))
       return null
-    } finally {
-      setTesting(false)
-    }
-  }
+    })
+  }, [invoke, status.model, t, trackOperation])
 
-  const listModels = async (apiKey?: string, model = status.model) => {
-    setTesting(true)
-    try {
+  const listModels = useCallback(async (apiKey?: string, model = status.model) => {
+    return trackOperation(async () => {
       const data = await invoke({ action: 'list_models', api_key: apiKey, model }, false) as unknown as { models?: string[]; status?: AiKeyStatus; error?: string }
       if (data.status) setStatus({ ...emptyStatus, ...data.status })
       if (data.error) setMessage(data.error)
       return Array.isArray(data.models) ? data.models : []
-    } catch {
+    }).catch(() => {
       setMessage(t('settings.connectionFailure'))
       return []
-    } finally {
-      setTesting(false)
-    }
-  }
+    })
+  }, [invoke, status.model, t, trackOperation])
 
-  return { message, testing, status, refresh, testConnection, saveKey, deleteKey, listModels }
+  return useMemo(
+    () => ({ message, testing: pendingOperations > 0, status, refresh, testConnection, saveKey, deleteKey, listModels }),
+    [deleteKey, listModels, message, pendingOperations, refresh, saveKey, status, testConnection],
+  )
+}
+
+export function AiConnectionProvider({ children }: { children: ReactNode }) {
+  const value = useAiConnectionState()
+  return createElement(AiConnectionContext.Provider, { value }, children)
+}
+
+export function useAiConnectionTest() {
+  const context = useContext(AiConnectionContext)
+  if (!context) {
+    throw new Error('useAiConnectionTest must be used inside AiConnectionProvider')
+  }
+  return context
 }

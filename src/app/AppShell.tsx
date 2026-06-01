@@ -27,6 +27,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import LoadingSkeleton from '../components/feedback/LoadingSkeleton'
 import AiCopilotButton from '../features/ai-copilot/components/AiCopilotButton'
 import AiCopilotProvider from '../features/ai-copilot/components/AiCopilotProvider'
+import { AiConnectionProvider } from '../features/settings/hooks/useAiConnectionTest'
 import { useAppData, useAuth } from '../lib/AppState'
 import { cn } from '../lib/utils'
 
@@ -52,9 +53,11 @@ const navItems = [
 
 export default function AppShell() {
   return (
-    <AiCopilotProvider>
-      <AppShellFrame />
-    </AiCopilotProvider>
+    <AiConnectionProvider>
+      <AiCopilotProvider>
+        <AppShellFrame />
+      </AiCopilotProvider>
+    </AiConnectionProvider>
   )
 }
 

@@ -254,7 +254,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setDataState((current) => {
       const next = updater(current)
       if (isSupabaseConfigured && hydratedProfileId === profile?.id) {
-        persistAppDataDiff(current, next)
+        void persistAppDataDiff(current, next).catch((error) => {
+          console.error('Supabase persistence failed', error)
+        })
       }
       return next
     })

@@ -41,6 +41,10 @@ type TableName =
   | 'alerts'
   | 'app_settings'
 
+let persistenceQueue: Promise<void> = Promise.resolve()
+
+const transientErrorPattern = /failed to fetch|network|timeout|timed out|429|5\d\d|temporarily unavailable/i
+
 export async function fetchProfile(userId: string): Promise<Profile | null> {
   if (!supabase) return null
   const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
@@ -50,15 +54,22 @@ export async function fetchProfile(userId: string): Promise<Profile | null> {
 
 export async function updateProfileRecord(profile: Profile) {
   if (!supabase) return
+  const payload = {
+    full_name: profile.full_name,
+    email: profile.email,
+    preferred_language: profile.preferred_language,
+    avatar_url: profile.avatar_url,
+  }
   const { error } = await supabase
     .from('profiles')
-    .update({
-      full_name: profile.full_name,
-      email: profile.email,
-      preferred_language: profile.preferred_language,
-      avatar_url: profile.avatar_url,
-    })
+    .update(payload)
     .eq('id', profile.id)
+  if (error && isTransientPersistenceError(error)) {
+    await delay(250)
+    const retry = await supabase.from('profiles').update(payload).eq('id', profile.id)
+    if (retry.error) throw retry.error
+    return
+  }
   if (error) throw error
 }
 
@@ -187,7 +198,7 @@ function changedRows<T extends { id: string }>(previous: T[], next: T[]) {
 }
 
 export function persistAppDataDiff(previous: AppData, next: AppData) {
-  if (!supabase) return
+  if (!supabase) return Promise.resolve()
 
   const changes = {
     families: changedRows(previous.families, next.families).map(toFamilyDb),
@@ -205,39 +216,59 @@ export function persistAppDataDiff(previous: AppData, next: AppData) {
     shoppingLists: changedRows(previous.shoppingLists, next.shoppingLists),
     shoppingListItems: changedRows(previous.shoppingListItems, next.shoppingListItems),
     alerts: changedRows(previous.alerts, next.alerts).map(toAlertDb),
-    settings: [toSettingsDb(next.settings)],
+    settings: changedRows([previous.settings], [next.settings]).map(toSettingsDb),
   }
 
-  void (async () => {
-    await upsertChanged('families', changes.families)
+  const changedTables = Object.entries(changes)
+    .filter(([, rows]) => rows.length > 0)
+    .map(([table, rows]) => `${table}:${rows.length}`)
+
+  const persist = async () => {
+    await upsertChanged('families', changes.families, changedTables)
     await Promise.all([
-      upsertChanged('family_members', changes.familyMembers),
-      upsertChanged('ingredients', changes.ingredients),
-      upsertChanged('recipes', changes.recipes),
-      upsertChanged('menu_plans', changes.menuPlans),
-      upsertChanged('app_settings', changes.settings),
+      upsertChanged('family_members', changes.familyMembers, changedTables),
+      upsertChanged('ingredients', changes.ingredients, changedTables),
+      upsertChanged('recipes', changes.recipes, changedTables),
+      upsertChanged('menu_plans', changes.menuPlans, changedTables),
+      upsertChanged('app_settings', changes.settings, changedTables),
     ])
     await Promise.all([
-      upsertChanged('allergies', changes.allergies),
-      upsertChanged('dietary_restrictions', changes.dietaryRestrictions),
-      upsertChanged('food_preferences', changes.foodPreferences),
-      upsertChanged('recipe_ingredients', changes.recipeIngredients),
-      upsertChanged('menu_plan_items', changes.menuPlanItems),
-      upsertChanged('pantry_inventory', changes.pantryInventory),
-      upsertChanged('freezer_inventory', changes.freezerInventory),
-      upsertChanged('shopping_lists', changes.shoppingLists),
-      upsertChanged('alerts', changes.alerts),
+      upsertChanged('allergies', changes.allergies, changedTables),
+      upsertChanged('dietary_restrictions', changes.dietaryRestrictions, changedTables),
+      upsertChanged('food_preferences', changes.foodPreferences, changedTables),
+      upsertChanged('recipe_ingredients', changes.recipeIngredients, changedTables),
+      upsertChanged('menu_plan_items', changes.menuPlanItems, changedTables),
+      upsertChanged('pantry_inventory', changes.pantryInventory, changedTables),
+      upsertChanged('freezer_inventory', changes.freezerInventory, changedTables),
+      upsertChanged('shopping_lists', changes.shoppingLists, changedTables),
+      upsertChanged('alerts', changes.alerts, changedTables),
     ])
-    await upsertChanged('shopping_list_items', changes.shoppingListItems)
-  })().catch((error) => {
-    console.error('Supabase persistence failed', error)
-  })
+    await upsertChanged('shopping_list_items', changes.shoppingListItems, changedTables)
+  }
+
+  persistenceQueue = persistenceQueue.catch(() => undefined).then(persist)
+  return persistenceQueue
 }
 
-async function upsertChanged(table: TableName, rows: object[]) {
+async function upsertChanged(table: TableName, rows: object[], changedTables: string[], attempt = 1): Promise<void> {
   if (!supabase || rows.length === 0) return
   const { error } = await supabase.from(table).upsert(rows)
-  if (error) throw error
+  if (!error) return
+  if (attempt === 1 && isTransientPersistenceError(error)) {
+    await delay(250)
+    return upsertChanged(table, rows, changedTables, 2)
+  }
+  const details = { table, rowCount: rows.length, attempt, changedTables, code: error.code, message: error.message }
+  console.error('Supabase persistence table failed', details)
+  throw error
+}
+
+function isTransientPersistenceError(error: { code?: string; message?: string; details?: string }) {
+  return transientErrorPattern.test(`${error.code || ''} ${error.message || ''} ${error.details || ''}`)
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => globalThis.setTimeout(resolve, ms))
 }
 
 function toFamilyDb(row: Family) {
