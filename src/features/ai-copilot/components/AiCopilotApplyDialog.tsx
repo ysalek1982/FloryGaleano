@@ -8,7 +8,7 @@ import { useAppData } from '../../../lib/AppState'
 import type { MealTime } from '../../../lib/types'
 import { todayIso } from '../../../lib/utils'
 import type { AiCopilotSuggestion } from '../types'
-import { applyOptionLabel, statusLabel } from '../utils/aiCopilotFormatters'
+import { applyOptionLabel, safeAdvancedPayload, statusLabel } from '../utils/aiCopilotFormatters'
 import { canApplyCopilotSuggestion, getApplyBlockReasonKey, suggestionStatus } from '../utils/aiCopilotGuards'
 
 export default function AiCopilotApplyDialog({
@@ -103,7 +103,7 @@ export default function AiCopilotApplyDialog({
         </div>
         <details className="rounded-md border border-stone-200 bg-white p-3">
           <summary className="cursor-pointer text-sm font-semibold text-slate-900">{t('aiCopilot.advancedPayload')}</summary>
-          <pre className="mt-3 max-h-56 overflow-auto rounded-md bg-stone-50 p-3 text-xs text-slate-700">{JSON.stringify(applyPreview, null, 2)}</pre>
+          <pre className="mt-3 max-h-56 overflow-auto rounded-md bg-stone-50 p-3 text-xs text-slate-700">{JSON.stringify(safeAdvancedPayload(applyPreview), null, 2)}</pre>
         </details>
         {!applicable && blockReasonKey && <p className="rounded-md bg-amber-50 p-3 text-sm text-amber-800">{t(blockReasonKey)}</p>}
         {needsReason && (

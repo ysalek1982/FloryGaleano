@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import { Badge, Button } from '../../shared/chefUi'
 import type { AiCopilotSuggestion } from '../types'
-import { applyOptionLabel, statusLabel } from '../utils/aiCopilotFormatters'
+import { applyOptionLabel, safeAdvancedPayload, statusLabel } from '../utils/aiCopilotFormatters'
 import { canApplyCopilotSuggestion, getApplyBlockReasonKey, suggestionStatus } from '../utils/aiCopilotGuards'
 
 export default function AiCopilotSuggestionCard({
@@ -85,7 +85,7 @@ export default function AiCopilotSuggestionCard({
           )}
           <details>
             <summary className="cursor-pointer font-semibold">{t('aiCopilot.advancedPayload')}</summary>
-            <pre className="mt-2 max-h-52 overflow-auto rounded-md bg-white p-3 text-xs">{JSON.stringify(suggestion.data || {}, null, 2)}</pre>
+            <pre className="mt-2 max-h-52 overflow-auto rounded-md bg-white p-3 text-xs">{JSON.stringify(safeAdvancedPayload(suggestion.data || {}), null, 2)}</pre>
           </details>
         </div>
       )}

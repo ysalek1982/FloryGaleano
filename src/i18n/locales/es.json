@@ -671,6 +671,7 @@
     "retryAfter": "Reintenta en aproximadamente {{seconds}} segundos.",
     "providerFailureTitle": "Proveedor IA requiere revisión",
     "providerFailureBody": "El proveedor IA no devolvió una respuesta útil. No se cambió ningún dato.",
+    "supabaseNotConfigured": "El backend de IA aún no está configurado.",
     "badges": {
       "ready": "Listo",
       "setupNeeded": "Configurar",

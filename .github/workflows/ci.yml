@@ -64,16 +64,18 @@ jobs:
         run: npm audit --omit=dev
 
       - name: Install Playwright browser
-        if: ${{ env.VITE_SUPABASE_URL != '' && (env.VITE_SUPABASE_PUBLISHABLE_KEY != '' || env.VITE_SUPABASE_ANON_KEY != '') && env.SUPABASE_SERVICE_ROLE_KEY != '' }}
         run: npx playwright install --with-deps chromium
 
-      - name: E2E tests
+      - name: Remote E2E tests
         if: ${{ env.VITE_SUPABASE_URL != '' && (env.VITE_SUPABASE_PUBLISHABLE_KEY != '' || env.VITE_SUPABASE_ANON_KEY != '') && env.SUPABASE_SERVICE_ROLE_KEY != '' }}
         run: npm run test:e2e
 
+      - name: Mocked Copilot E2E tests
+        run: npm run test:e2e:mocked
+
       - name: Skip E2E tests
         if: ${{ env.VITE_SUPABASE_URL == '' || (env.VITE_SUPABASE_PUBLISHABLE_KEY == '' && env.VITE_SUPABASE_ANON_KEY == '') || env.SUPABASE_SERVICE_ROLE_KEY == '' }}
-        run: echo "Skipping E2E tests because remote QA secrets are not configured."
+        run: echo "Skipping remote E2E tests because remote QA secrets are not configured."
 
       - name: Remote RLS tests
         if: ${{ env.VITE_SUPABASE_URL != '' && (env.VITE_SUPABASE_PUBLISHABLE_KEY != '' || env.VITE_SUPABASE_ANON_KEY != '') && env.SUPABASE_SERVICE_ROLE_KEY != '' }}

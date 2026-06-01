@@ -4,20 +4,21 @@ import { isSupabaseConfigured, supabase } from '../../../lib/supabase'
 import type { AiCopilotActionDefinition, AiCopilotPageContext, AiCopilotResponse } from '../types'
 
 export function useAiCopilotActions() {
-  const { i18n } = useTranslation()
+  const { i18n, t } = useTranslation()
 
   const invokeAction = async (action: AiCopilotActionDefinition, pageContext: AiCopilotPageContext): Promise<AiCopilotResponse> => {
     if (!isSupabaseConfigured || !supabase) {
+      const message = t('aiCopilot.supabaseNotConfigured')
       return {
         status: 'review_needed',
         page_id: pageContext.page_id,
         action: action.edgeAction,
         title: action.key,
-        summary: 'Supabase is not configured.',
+        summary: message,
         suggestions: [],
         validation_summary: {
           status: 'review_needed',
-          reasons: ['Supabase is not configured.'],
+          reasons: [message],
           warnings: [],
         },
       }

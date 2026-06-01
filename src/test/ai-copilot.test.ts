@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { safeAdvancedPayload } from '../features/ai-copilot/utils/aiCopilotFormatters'
 import { getAiCopilotActions } from '../features/ai-copilot/utils/aiCopilotRegistry'
 import { canApplyCopilotSuggestion, getApplyBlockReasonKey, getCopilotAvailability } from '../features/ai-copilot/utils/aiCopilotGuards'
 import type { AiKeyStatus } from '../features/settings/hooks/useAiConnectionTest'
@@ -55,5 +56,23 @@ describe('AI Copilot', () => {
       retry_after_seconds: 0,
     })
     expect(availability.canRun).toBe(true)
+  })
+
+  it('redacts sensitive fields from advanced payload previews', () => {
+    expect(safeAdvancedPayload({
+      recipe_id: 'recipe-1',
+      nested: {
+        gemini_key: 'AIza-secret',
+        service_role: 'service-role-secret',
+        key_iv: 'iv',
+      },
+    })).toEqual({
+      recipe_id: 'recipe-1',
+      nested: {
+        gemini_key: '[redacted]',
+        service_role: '[redacted]',
+        key_iv: '[redacted]',
+      },
+    })
   })
 })

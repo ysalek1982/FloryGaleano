@@ -1,5 +1,7 @@
 import type { AiCopilotApplyOption, AiCopilotPageId } from '../types'
 
+const SENSITIVE_PAYLOAD_KEY_PATTERN = /(^|_)(api[_-]?key|gemini[_-]?key|secret|token|service[_-]?role|encrypted[_-]?key|key[_-]?iv|vault[_-]?secret[_-]?id|authorization|password)$/i
+
 export function pageIdFromPath(pathname: string): AiCopilotPageId {
   if (pathname.includes('/families')) return 'families'
   if (pathname.includes('/diners')) return 'diners'
@@ -54,4 +56,16 @@ export function applyOptionLabel(option?: AiCopilotApplyOption | string) {
     no_apply_available: 'aiCopilot.applyOptions.no_apply_available',
   }
   return labels[normalized] || labels.no_apply_available
+}
+
+export function safeAdvancedPayload(payload: unknown): unknown {
+  if (Array.isArray(payload)) return payload.map((item) => safeAdvancedPayload(item))
+  if (!payload || typeof payload !== 'object') return payload
+
+  return Object.fromEntries(
+    Object.entries(payload as Record<string, unknown>).map(([key, value]) => [
+      key,
+      SENSITIVE_PAYLOAD_KEY_PATTERN.test(key) ? '[redacted]' : safeAdvancedPayload(value),
+    ]),
+  )
 }

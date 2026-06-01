@@ -671,6 +671,7 @@
     "retryAfter": "Retry after approximately {{seconds}} seconds.",
     "providerFailureTitle": "AI provider needs review",
     "providerFailureBody": "The AI provider did not return a usable response. No data was changed.",
+    "supabaseNotConfigured": "AI backend is not configured yet.",
     "badges": {
       "ready": "Ready",
       "setupNeeded": "Setup needed",

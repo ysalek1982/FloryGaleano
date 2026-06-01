@@ -8,6 +8,7 @@ import {
   updateProfileRecord,
 } from './database'
 import { demoData, ids } from './demoData'
+import { isE2eMockAuth } from './env'
 import { isSupabaseConfigured, supabase } from './supabase'
 import type {
   Allergy,
@@ -107,11 +108,11 @@ function readStoredProfile(): Profile | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [profile, setProfile] = useState<Profile | null>(() => (isSupabaseConfigured ? null : readStoredProfile()))
-  const [isAuthLoading, setIsAuthLoading] = useState(isSupabaseConfigured)
+  const [profile, setProfile] = useState<Profile | null>(() => (isSupabaseConfigured && !isE2eMockAuth ? null : readStoredProfile()))
+  const [isAuthLoading, setIsAuthLoading] = useState(isSupabaseConfigured && !isE2eMockAuth)
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) return
+    if (!isSupabaseConfigured || !supabase || isE2eMockAuth) return
     const client = supabase
 
     const syncSession = async () => {
@@ -149,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(AUTH_KEY, JSON.stringify(nextProfile))
     localStorage.setItem('smart-family-meals:language', nextProfile.preferred_language)
     i18n.changeLanguage(nextProfile.preferred_language)
-    if (isSupabaseConfigured) {
+    if (isSupabaseConfigured && !isE2eMockAuth) {
       void updateProfileRecord(nextProfile).catch((error) => {
         console.error('Profile update failed', error)
       })
@@ -162,6 +163,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: Boolean(profile),
       isAuthLoading,
       async login(email, password) {
+        if (isE2eMockAuth) {
+          updateProfile({ ...demoData.profiles[0], email })
+          return
+        }
         if (isSupabaseConfigured && supabase) {
           const { error, data } = await supabase.auth.signInWithPassword({ email, password })
           if (error) throw error
@@ -178,6 +183,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateProfile({ ...demoData.profiles[0], email })
       },
       async register(fullName, email, password) {
+        if (isE2eMockAuth) {
+          updateProfile({ ...demoData.profiles[0], full_name: fullName, email })
+          return
+        }
         if (isSupabaseConfigured && supabase) {
           const { error, data } = await supabase.auth.signUp({
             email,
@@ -196,6 +205,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateProfile({ ...demoData.profiles[0], full_name: fullName, email })
       },
       async forgotPassword(email) {
+        if (isE2eMockAuth) return
         if (isSupabaseConfigured && supabase) {
           const { error } = await supabase.auth.resetPasswordForEmail(email, {
             redirectTo: getAuthRedirectUrl('/login'),
@@ -207,7 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateProfile(demoData.profiles[0])
       },
       async logout() {
-        if (isSupabaseConfigured && supabase) {
+        if (isSupabaseConfigured && supabase && !isE2eMockAuth) {
           await supabase.auth.signOut()
         }
         setProfile(null)
@@ -227,13 +237,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [hydratedProfileId, setHydratedProfileId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || isE2eMockAuth) {
       localStorage.setItem(DATA_KEY, JSON.stringify(data))
     }
   }, [data])
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !isAuthenticated || !profile) return
+    if (!isSupabaseConfigured || isE2eMockAuth || !isAuthenticated || !profile) return
     let cancelled = false
     fetchSupabaseAppData(profile)
       .then((nextData) => {
@@ -253,7 +263,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const setData = useCallback((updater: (current: AppData) => AppData) => {
     setDataState((current) => {
       const next = updater(current)
-      if (isSupabaseConfigured && hydratedProfileId === profile?.id) {
+      if (isSupabaseConfigured && !isE2eMockAuth && hydratedProfileId === profile?.id) {
         void persistAppDataDiff(current, next).catch((error) => {
           console.error('Supabase persistence failed', error)
         })
@@ -265,7 +275,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AppDataContextValue>(
     () => ({
       data,
-      isDataLoading: isSupabaseConfigured && isAuthenticated && Boolean(profile) && hydratedProfileId !== profile?.id,
+      isDataLoading: isSupabaseConfigured && !isE2eMockAuth && isAuthenticated && Boolean(profile) && hydratedProfileId !== profile?.id,
       setData,
       addFamily(input) {
         const family: Family = {
