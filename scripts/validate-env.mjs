@@ -26,6 +26,7 @@ const optional = [
   'SUPABASE_DB_PASSWORD',
   'SUPABASE_SERVICE_ROLE_KEY',
   'APP_SUPABASE_SERVICE_ROLE_KEY',
+  'APP_USER_SECRET_ENCRYPTION_KEY',
   'GEMINI_API_KEY',
   'GEMINI_MODEL',
   'VERCEL_TOKEN',
@@ -88,6 +89,7 @@ function validateMode() {
   }
 
   if (mode === 'production') validateProductionSafety()
+  if (['staging', 'production'].includes(mode)) validateEdgeSecrets()
 }
 
 function validateProductionSafety() {
@@ -99,6 +101,20 @@ function validateProductionSafety() {
   if (urlLooksLocal) status('WARN', 'production Supabase URL', 'appears to be localhost')
   if (urlLooksPlaceholder) status('WARN', 'production Supabase URL', 'appears to be a placeholder')
   if (appEnvLooksDev) status('WARN', 'production app environment', 'appears to be a development value')
+}
+
+function validateEdgeSecrets() {
+  const requiredForEdge = ['SUPABASE_ACCESS_TOKEN', 'SUPABASE_PROJECT_REF', 'SUPABASE_DB_PASSWORD', 'APP_USER_SECRET_ENCRYPTION_KEY']
+  for (const name of requiredForEdge) {
+    if (process.env[name]) {
+      status('PASS', `edge ${name}`, 'present')
+    } else if (strict) {
+      status('FAIL', `edge ${name}`, 'missing')
+      failed = true
+    } else {
+      status('WARN', `edge ${name}`, 'missing for Edge Function deployment')
+    }
+  }
 }
 
 function status(level, label, detail) {

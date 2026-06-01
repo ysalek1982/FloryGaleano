@@ -8,6 +8,7 @@ import { useAppData } from '../../../lib/AppState'
 import type { MealTime } from '../../../lib/types'
 import { todayIso } from '../../../lib/utils'
 import type { AiCopilotSuggestion } from '../types'
+import { applyOptionLabel, statusLabel } from '../utils/aiCopilotFormatters'
 import { canApplyCopilotSuggestion, getApplyBlockReasonKey, suggestionStatus } from '../utils/aiCopilotGuards'
 
 export default function AiCopilotApplyDialog({
@@ -35,6 +36,8 @@ export default function AiCopilotApplyDialog({
     apply_option: suggestion.apply_option || 'no_apply_available',
     data: dataPayload,
   }
+  const applyLabel = t(applyOptionLabel(suggestion.apply_option))
+  const translatedStatus = t(statusLabel(status))
 
   const apply = () => {
     if (!applicable) return
@@ -90,11 +93,11 @@ export default function AiCopilotApplyDialog({
           <dl className="mt-2 grid gap-2 text-sm text-slate-700">
             <div className="flex justify-between gap-3">
               <dt>{t('aiCopilot.requiredUserAction')}</dt>
-              <dd className="font-semibold">{String(applyPreview.apply_option)}</dd>
+              <dd className="font-semibold">{applyLabel}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt>{t('common.status')}</dt>
-              <dd className="font-semibold">{status}</dd>
+              <dd className="font-semibold">{translatedStatus}</dd>
             </div>
           </dl>
         </div>

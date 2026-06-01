@@ -20,30 +20,27 @@ export default function DayPlannerPage() {
   const { t } = useTranslation()
   const state = useDayPlannerState()
   const { addRecipeToSlot, removeMenuPlanItem } = useDayMealActions()
-  const { data, addRecipe } = useAppData()
+  const { data } = useAppData()
 
   const applySuggestion = (suggestion: DayAiSuggestion) => {
-    if (suggestion.safety_status === 'blocked') return
-    if (suggestion.safety_status === 'review_needed' && !window.confirm(t('dayPlanner.confirmReviewSuggestion'))) return
+    if (suggestion.safety_status !== 'safe' || suggestion.usable !== true) {
+      state.setError(t('ai.reviewNeededStructuredData'))
+      return
+    }
     const recipe = suggestion.recipe_id
       ? data.recipes.find((candidate) => candidate.id === suggestion.recipe_id)
       : data.recipes.find((candidate) => candidate.name === suggestion.title)
-    const recipeId = recipe?.id || addRecipe({
-      name: suggestion.title || t('recipes.create'),
-      family_id: state.familyId,
-      ai_generated: true,
-      status: 'draft',
-      servings: 4,
-      instructions: '',
-    }, [{ ingredient_id: data.ingredients[0]?.id, quantity_g: 100 }]).id
+    if (!recipe?.id) {
+      state.setError(t('ai.reviewNeededStructuredData'))
+      return
+    }
     const mealTime = suggestion.meal_time || mealTimes.find((candidate) => !state.dayItems.some((item) => item.meal_time === candidate)) || 'dinner'
     addRecipeToSlot({
       familyId: state.familyId,
       date: state.date,
       mealTime,
-      recipeId,
+      recipeId: recipe.id,
       dinerId: 'all',
-      overrideReason: suggestion.safety_status === 'review_needed' ? t('dayPlanner.confirmedReviewSuggestion') : undefined,
       onError: state.setError,
     })
   }

@@ -33,4 +33,9 @@ describe('i18n', () => {
       expect(en.nav[key as keyof typeof en.nav]).not.toBe(es.nav[key as keyof typeof es.nav])
     }
   })
+
+  it('does not contain mojibake in Spanish strings', () => {
+    const serialized = JSON.stringify(es)
+    expect(serialized).not.toMatch(/[ÃÂ�]/)
+  })
 })

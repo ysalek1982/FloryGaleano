@@ -160,6 +160,10 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return json({ ok: true })
 
   try {
+    const contentLength = Number(req.headers.get('content-length') || 0)
+    if (Number.isFinite(contentLength) && contentLength > 200_000) {
+      return json({ error: 'AI Chef request is too large.' }, 413)
+    }
     const body = await req.json().catch(() => null)
     if (!body || typeof body !== 'object') {
       return json({ error: 'Malformed AI Chef request.' }, 400)
@@ -217,6 +221,7 @@ serve(async (req) => {
         inventoryForecast,
         retryAfterSeconds: userKey.retryAfterSeconds,
         lastError: userKey.lastError,
+        aiKeySource: 'user',
       }))
     }
     const selectedKey = userKey?.apiKey
@@ -299,7 +304,9 @@ serve(async (req) => {
 
     if (!geminiResult.ok) {
       if (geminiResult.status === 'rate_limited') {
-        await markUserRateLimited(admin, userData.user.id, selectedKey.model, geminiResult.error, geminiResult.retryAfterSeconds)
+        if (selectedKey.source === 'user') {
+          await markUserRateLimited(admin, userData.user.id, selectedKey.model, geminiResult.error, geminiResult.retryAfterSeconds)
+        }
         return json(rateLimitedAiResponse({
           model: selectedKey.model,
           action,
@@ -307,6 +314,7 @@ serve(async (req) => {
           inventoryForecast,
           retryAfterSeconds: geminiResult.retryAfterSeconds,
           lastError: geminiResult.error,
+          aiKeySource: selectedKey.source,
         }))
       }
       return json(fallbackAiResponse({
@@ -341,7 +349,7 @@ serve(async (req) => {
       : contextualActions.has(action)
         ? validateCopilotOutput(parsed, context, inventoryForecast, action, body?.page_context)
       : validateAiOutput(parsed, context, inventoryForecast, action)
-    await createAiAlerts(admin, context, validated.suggestions)
+    await createAiAlerts(admin, context, validated.suggestions, userData.user.id)
     return json({
       configured: true,
       model: selectedKey.model,
@@ -382,6 +390,7 @@ async function loadFamilyContext(admin: ReturnType<typeof createClient>, userId:
     { data: freezer },
     { data: menuPlans },
     { data: foodCategories },
+    { data: familyUsers },
   ] = await Promise.all([
     admin.from('families').select('*').eq('id', familyId).maybeSingle(),
     admin.from('family_members').select('*, allergies(*), dietary_restrictions(*), food_preferences(*)').eq('family_id', familyId),
@@ -391,6 +400,7 @@ async function loadFamilyContext(admin: ReturnType<typeof createClient>, userId:
     admin.from('freezer_inventory').select('*').eq('family_id', familyId),
     admin.from('menu_plans').select('*, menu_plan_items(*)').eq('family_id', familyId),
     admin.from('food_categories').select('code, name_en, name_es, aliases_en, aliases_es, usda_category_hints').eq('is_active', true).order('sort_order'),
+    admin.from('family_users').select('profile_id, role').eq('family_id', familyId),
   ])
 
   const recipeIds = (recipes || []).map((recipe: { id: string }) => recipe.id).filter(Boolean)
@@ -409,6 +419,7 @@ async function loadFamilyContext(admin: ReturnType<typeof createClient>, userId:
     recipe_ingredients: recipeIngredients || [],
     pantry: pantry || [],
     freezer: freezer || [],
+    family_users: familyUsers || [],
     food_categories: foodCategories || [],
     menu_history: (menuPlans || []).flatMap((plan: { menu_plan_items?: unknown[] }) => plan.menu_plan_items || []),
   }
@@ -516,11 +527,15 @@ async function generateWithGemini({
   let retryAfterSeconds: number | null = null
   for (const model of models) {
     try {
+      const safeModel = encodeURIComponent(model)
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey,
+          },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
             generationConfig: schema
@@ -1215,6 +1230,7 @@ function rateLimitedAiResponse({
   inventoryForecast,
   retryAfterSeconds,
   lastError,
+  aiKeySource = 'user',
 }: {
   model: string
   action: string
@@ -1222,6 +1238,7 @@ function rateLimitedAiResponse({
   inventoryForecast: InventoryForecast
   retryAfterSeconds: number | null
   lastError?: string | null
+  aiKeySource?: string
 }) {
   const reason = lastError || 'Gemini quota or rate limit was reached. Retry later or change model in Settings.'
   return {
@@ -1229,8 +1246,8 @@ function rateLimitedAiResponse({
     model,
     action,
     ai_provider: 'gemini',
-    ai_key_source: 'user',
-    ai_configured: false,
+    ai_key_source: aiKeySource,
+    ai_configured: aiKeySource !== 'not_configured',
     code: 'gemini_rate_limited',
     message: reason,
     suggested_action: 'Wait for quota to reset, test again later, or switch to Gemini 2.5 Flash-Lite in Settings.',
@@ -1552,20 +1569,42 @@ async function createAiAlerts(
   admin: ReturnType<typeof createClient>,
   context: Record<string, unknown>,
   suggestions: Array<Record<string, unknown>>,
+  userId: string,
 ) {
   const family = context.family as { id?: string } | null
   if (!family?.id) return
-  const unsafe = suggestions.filter((suggestion) => suggestion.safety_status !== 'safe')
+  if (!canWriteFamilyFromContext(context, userId)) return
+  const unsafe = suggestions.filter((suggestion) => normalizedSuggestionStatus(suggestion) !== 'safe')
   if (unsafe.length === 0) return
-  await admin.from('alerts').insert(unsafe.map((suggestion) => ({
+  const cappedUnsafe = unsafe.slice(0, 5)
+  await admin.from('alerts').insert(cappedUnsafe.map((suggestion) => ({
     family_id: family.id,
     type: 'ai_safety_review',
-    severity: suggestion.safety_status === 'blocked' ? 'critical' : 'warning',
+    severity: normalizedSuggestionStatus(suggestion) === 'blocked' ? 'critical' : 'warning',
     title: 'alerts.reviewRecipe',
     message: 'alerts.reviewRecipeMessage',
     related_table: 'recipes',
     related_id: suggestion.recipe_id || null,
   })))
+}
+
+function normalizedSuggestionStatus(suggestion: Record<string, unknown>) {
+  const status = String(suggestion.safety_status || suggestion.status || 'review_needed')
+  return status === 'safe' || status === 'blocked' ? status : 'review_needed'
+}
+
+function canWriteFamilyFromContext(context: Record<string, unknown>, userId: string) {
+  const profile = context.profile as { role?: string } | null
+  if (profile?.role === 'super_admin') return true
+  const family = context.family as { owner_id?: string; chef_id?: string } | null
+  if (family?.owner_id === userId || family?.chef_id === userId) return true
+  const membership = Array.isArray(context.family_users)
+    ? context.family_users.find((item) => {
+      const row = item as { profile_id?: string; role?: string }
+      return row.profile_id === userId && ['chef', 'family_admin'].includes(String(row.role))
+    })
+    : null
+  return Boolean(membership)
 }
 
 function summarizeContext(context: Record<string, unknown>) {

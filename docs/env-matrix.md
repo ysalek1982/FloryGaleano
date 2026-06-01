@@ -56,5 +56,6 @@ Set these separately in development, staging, and production Supabase projects.
 | `GEMINI_API_KEY` | Yes | Never expose to frontend or Vercel browser env. |
 | `GEMINI_MODEL` | Yes | Model name for ai-chef. |
 | `APP_SUPABASE_SERVICE_ROLE_KEY` | Yes | Optional fallback if built-in Edge Function service role is unavailable. |
+| `APP_USER_SECRET_ENCRYPTION_KEY` | Yes | Required AES-GCM secret for per-user Gemini BYOK storage. |
 
 Service role keys, database passwords, Supabase access tokens, and Gemini keys never go to Vercel frontend environment variables.

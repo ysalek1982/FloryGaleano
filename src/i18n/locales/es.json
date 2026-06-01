@@ -10,6 +10,7 @@
     "createAccount": "Crear Cuenta",
     "signIn": "Iniciar Sesión",
     "signOut": "Cerrar Sesión",
+    "signOutShort": "Salir",
     "save": "Guardar",
     "cancel": "Cancelar",
     "create": "Crear",
@@ -86,6 +87,7 @@
   },
   "nav": {
     "dashboard": "Panel",
+    "openMenu": "Abrir menú de navegación",
     "families": "Familias",
     "diners": "Comensales",
     "ingredients": "Ingredientes",
@@ -204,8 +206,8 @@
     "askAiChef": "Preguntar al Chef IA",
     "familyOverview": "Resumen de Familias",
     "noMissingIngredients": "No hay ingredientes faltantes para el plan actual.",
-    "noUpcomingMeals": "No hay comidas prÃ³ximas planificadas.",
-    "aiReadyBody": "Pide al Chef IA ideas seguras, sustituciones, uso del freezer o espacios vacÃ­os. Las sugerencias siguen pasando validaciÃ³n de seguridad antes de usarse."
+    "noUpcomingMeals": "No hay comidas próximas planificadas.",
+    "aiReadyBody": "Pide al Chef IA ideas seguras, sustituciones, uso del freezer o espacios vacíos. Las sugerencias siguen pasando validación de seguridad antes de usarse."
   },
   "families": {
     "title": "Familias",
@@ -448,36 +450,36 @@
     "testRecipe": "Probar Receta",
     "byFamily": "Por Familia",
     "byDiner": "Por Comensal",
-    "reactionNotes": "Notas de ReacciÃ³n",
+    "reactionNotes": "Notas de Reacción",
     "familyMatrix": "Matriz de Alergias Familiar",
-    "matchedAllergen": "AlÃ©rgeno Detectado",
-    "recommendation": "RecomendaciÃ³n",
+    "matchedAllergen": "Alérgeno Detectado",
+    "recommendation": "Recomendación",
     "traceRisk": "Riesgo de trazas o contacto cruzado",
-    "noMatchedAllergens": "No hay alÃ©rgenos detectados.",
-    "noAllergies": "No hay alergias registradas para esta selecciÃ³n.",
+    "noMatchedAllergens": "No hay alérgenos detectados.",
+    "noAllergies": "No hay alergias registradas para esta selección.",
     "rulesSummary": "Reglas Demo de Alergias de Soren",
-    "crossContactBody": "Cuando se evitan trazas o el riesgo de contacto cruzado estÃ¡ activo, los datos ambiguos de ingredientes deben revisarse antes de servir la receta.",
+    "crossContactBody": "Cuando se evitan trazas o el riesgo de contacto cruzado está activo, los datos ambiguos de ingredientes deben revisarse antes de servir la receta.",
     "sorenRules": [
-      "Wheat, rye, barley, gluten, trigo, centeno y cebada estÃ¡n bloqueados.",
-      "Los frutos secos estÃ¡n bloqueados excepto almonds y almendras.",
-      "Sesame, sÃ©samo y tahini estÃ¡n bloqueados.",
-      "Semillas, mantequilla y harina de sunflower estÃ¡n bloqueadas; aceite y lecitina de sunflower estÃ¡n permitidos.",
-      "Lentejas rojas, verdes, marrones y negras estÃ¡n permitidas; lentejas genÃ©ricas requieren revisiÃ³n."
+      "Wheat, rye, barley, gluten, trigo, centeno y cebada están bloqueados.",
+      "Los frutos secos están bloqueados excepto almonds y almendras.",
+      "Sesame, sésamo y tahini están bloqueados.",
+      "Semillas, mantequilla y harina de sunflower están bloqueadas; aceite y lecitina de sunflower están permitidos.",
+      "Lentejas rojas, verdes, marrones y negras están permitidas; lentejas genéricas requieren revisión."
     ],
     "recommendations": {
       "safe": "Usable para este comensal.",
       "review": "Revisar detalles del ingrediente antes de servir.",
-      "blocked": "No servir sin una anulaciÃ³n documentada."
+      "blocked": "No servir sin una anulación documentada."
     },
     "reasons": {
       "gluten_blocked": "Coincide con gluten o grano relacionado",
       "tree_nut_blocked": "Coincide con regla de frutos secos",
-      "sesame_blocked": "Coincide con sÃ©samo o tahini",
+      "sesame_blocked": "Coincide con sésamo o tahini",
       "sunflower_derivative_blocked": "Coincide con derivado bloqueado de sunflower",
-      "lentils_review": "Lentejas genÃ©ricas requieren revisiÃ³n",
-      "trace_blocked": "ExposiciÃ³n a trazas bloqueada",
-      "trace_review": "ExposiciÃ³n a trazas requiere revisiÃ³n",
-      "incomplete_allergen_data": "Datos de alÃ©rgenos incompletos",
+      "lentils_review": "Lentejas genéricas requieren revisión",
+      "trace_blocked": "Exposición a trazas bloqueada",
+      "trace_review": "Exposición a trazas requiere revisión",
+      "incomplete_allergen_data": "Datos de alérgenos incompletos",
       "preference_conflict": "Conflicto con preferencia del comensal"
     },
     "mild": "Leve",
@@ -496,10 +498,10 @@
     "low": "Bajo",
     "high": "Alto",
     "printReport": "Imprimir Reporte Nutricional",
-    "macroDistribution": "DistribuciÃ³n de Macros y Minerales",
+    "macroDistribution": "Distribución de Macros y Minerales",
     "missingNutritionData": "Datos Nutricionales Faltantes",
     "warnings": "Advertencias Nutricionales",
-    "warningBody": "Este comensal estÃ¡ fuera del rango objetivo de calorÃ­as o proteÃ­na hoy.",
+    "warningBody": "Este comensal está fuera del rango objetivo de calorías o proteína hoy.",
     "noWarnings": "No hay advertencias nutricionales para hoy.",
     "noMissingData": "No se detectan datos nutricionales faltantes.",
     "printSummary": "Resumen Nutricional Imprimible",
@@ -507,24 +509,24 @@
     "nutrient": "Nutriente"
   },
   "dayPlanner": {
-    "subtitle": "Enfoca un dÃ­a de servicio: planifica comidas, valida seguridad, revisa nutriciÃ³n e imprime el plan de cocina.",
-    "timeline": "Cronograma de Comidas del DÃ­a",
-    "nutritionSummary": "Resumen Nutricional del DÃ­a",
-    "allergySummary": "Resumen de Alergias del DÃ­a",
-    "missingIngredients": "Ingredientes Faltantes del DÃ­a",
-    "alerts": "Alertas del DÃ­a",
-    "completeDayWithAi": "Completar DÃ­a con IA",
-    "printDayPlan": "Imprimir Plan del DÃ­a",
+    "subtitle": "Enfoca un día de servicio: planifica comidas, valida seguridad, revisa nutrición e imprime el plan de cocina.",
+    "timeline": "Cronograma de Comidas del Día",
+    "nutritionSummary": "Resumen Nutricional del Día",
+    "allergySummary": "Resumen de Alergias del Día",
+    "missingIngredients": "Ingredientes Faltantes del Día",
+    "alerts": "Alertas del Día",
+    "completeDayWithAi": "Completar Día con IA",
+    "printDayPlan": "Imprimir Plan del Día",
     "removeRecipe": "Quitar Receta",
-    "noMealsPlanned": "AÃºn no hay comidas planificadas para este dÃ­a.",
-    "noSafetyIssues": "No hay comidas bloqueadas o en revisiÃ³n para este dÃ­a.",
-    "aiSuggestions": "Sugerencias IA del DÃ­a",
-    "noAiSuggestions": "Ejecuta IA para generar sugerencias seguras del dÃ­a.",
+    "noMealsPlanned": "Aún no hay comidas planificadas para este día.",
+    "noSafetyIssues": "No hay comidas bloqueadas o en revisión para este día.",
+    "aiSuggestions": "Sugerencias IA del Día",
+    "noAiSuggestions": "Ejecuta IA para generar sugerencias seguras del día.",
     "blockedSuggestion": "Sugerencia Bloqueada",
-    "reviewRequired": "RevisiÃ³n Requerida",
-    "confirmReviewSuggestion": "Esta sugerencia requiere revisiÃ³n. Â¿Aplicarla con una nota documentada?",
-    "confirmedReviewSuggestion": "Revisado desde sugerencia IA del Planificador del DÃ­a.",
-    "dayPlan": "Plan del DÃ­a"
+    "reviewRequired": "Revisión Requerida",
+    "confirmReviewSuggestion": "Esta sugerencia requiere revisión. ¿Aplicarla con una nota documentada?",
+    "confirmedReviewSuggestion": "Revisado desde sugerencia IA del Planificador del Día.",
+    "dayPlan": "Plan del Día"
   },
   "ai": {
     "title": "Chef IA",
@@ -644,11 +646,20 @@
     "applyBlockedUnsafe": "Esta sugerencia está bloqueada por validación de seguridad y no se puede aplicar.",
     "applyNoAction": "Esta sugerencia es solo explicativa y no tiene acción directa.",
     "openRecipeBuilderRequired": "Los borradores de recetas nuevas deben abrir el constructor de recetas; no se crean en silencio.",
+    "recipePatchNotImplemented": "Las actualizaciones de recetas por IA deben revisarse en el constructor de recetas antes de aplicarse.",
     "whatWillApply": "¿Qué se aplicará?",
     "applyOptionSummary": "Listo para aplicar: {{option}}.",
     "missingStructuredPayload": "El payload estructurado falta o está incompleto.",
     "advancedPayload": "Payload avanzado",
     "close": "Cerrar Copiloto IA",
+    "applyOptions": {
+      "apply_recipe_patch": "Actualizar receta existente",
+      "apply_menu_patch": "Agregar receta al menú",
+      "create_shopping_item": "Crear ítem de compras",
+      "create_alert": "Crear alerta",
+      "open_settings": "Abrir Ajustes",
+      "no_apply_available": "Sin acción directa"
+    },
     "reviewReason": "Motivo de revisión",
     "confirmApply": "Confirmar aplicación",
     "appliedFromCopilot": "Aplicado desde Copiloto IA después de validación.",
@@ -686,66 +697,168 @@
     },
     "actions": {
       "dashboard": {
-        "summarizeRisks": { "label": "Resumir riesgos de cocina", "description": "Revisar alertas, faltantes, nutrición y producción de hoy." },
-        "nextAction": { "label": "Sugerir siguiente acción", "description": "Priorizar el flujo del chef para la familia actual." },
-        "explainAlerts": { "label": "Explicar alertas críticas", "description": "Convertir alertas críticas en una lista clara." }
+        "summarizeRisks": {
+          "label": "Resumir riesgos de cocina",
+          "description": "Revisar alertas, faltantes, nutrición y producción de hoy."
+        },
+        "nextAction": {
+          "label": "Sugerir siguiente acción",
+          "description": "Priorizar el flujo del chef para la familia actual."
+        },
+        "explainAlerts": {
+          "label": "Explicar alertas críticas",
+          "description": "Convertir alertas críticas en una lista clara."
+        }
       },
       "ingredients": {
-        "suggestCategory": { "label": "Categorizar con IA", "description": "Sugerir categoría predefinida y etiquetas probables." },
-        "detectAllergens": { "label": "Detectar alérgenos", "description": "Revisar señales de alérgenos y trazas." },
-        "suggestSubstitutions": { "label": "Buscar sustitutos", "description": "Sugerir alternativas más seguras." }
+        "suggestCategory": {
+          "label": "Categorizar con IA",
+          "description": "Sugerir categoría predefinida y etiquetas probables."
+        },
+        "detectAllergens": {
+          "label": "Detectar alérgenos",
+          "description": "Revisar señales de alérgenos y trazas."
+        },
+        "suggestSubstitutions": {
+          "label": "Buscar sustitutos",
+          "description": "Sugerir alternativas más seguras."
+        }
       },
       "recipes": {
-        "improveRecipe": { "label": "Mejorar con IA", "description": "Mejorar instrucciones, etiquetas y uso escolar/freezer." },
-        "checkSafety": { "label": "Revisar seguridad", "description": "Validar alergias, nutrición, rotación e inventario." },
-        "safeVariation": { "label": "Crear variación segura", "description": "Borrador sin ingredientes bloqueados." }
+        "improveRecipe": {
+          "label": "Mejorar con IA",
+          "description": "Mejorar instrucciones, etiquetas y uso escolar/freezer."
+        },
+        "checkSafety": {
+          "label": "Revisar seguridad",
+          "description": "Validar alergias, nutrición, rotación e inventario."
+        },
+        "safeVariation": {
+          "label": "Crear variación segura",
+          "description": "Borrador sin ingredientes bloqueados."
+        }
       },
       "menuPlanner": {
-        "generateWeek": { "label": "Generar semana validada", "description": "Usar recetas candidatas y validación de servidor." },
-        "completeSlots": { "label": "Completar semana con IA", "description": "Llenar espacios sin romper reglas de seguridad." },
-        "repairUnsafe": { "label": "Reparar espacios inseguros", "description": "Reparar solo comidas bloqueadas o en revisión." },
-        "improveVariety": { "label": "Mejorar variedad", "description": "Reducir repeticiones y mejorar diversidad." }
+        "generateWeek": {
+          "label": "Generar semana validada",
+          "description": "Usar recetas candidatas y validación de servidor."
+        },
+        "completeSlots": {
+          "label": "Completar semana con IA",
+          "description": "Llenar espacios sin romper reglas de seguridad."
+        },
+        "repairUnsafe": {
+          "label": "Reparar espacios inseguros",
+          "description": "Reparar solo comidas bloqueadas o en revisión."
+        },
+        "improveVariety": {
+          "label": "Mejorar variedad",
+          "description": "Reducir repeticiones y mejorar diversidad."
+        }
       },
       "dayPlanner": {
-        "completeDay": { "label": "Completar día", "description": "Planificar comidas restantes del día seleccionado." },
-        "sportSnack": { "label": "Sugerir snack deportivo", "description": "Encontrar snack seguro con energía y proteína." },
-        "repairDay": { "label": "Reparar plan del día", "description": "Reparar comidas inseguras o incompletas." }
+        "completeDay": {
+          "label": "Completar día",
+          "description": "Planificar comidas restantes del día seleccionado."
+        },
+        "sportSnack": {
+          "label": "Sugerir snack deportivo",
+          "description": "Encontrar snack seguro con energía y proteína."
+        },
+        "repairDay": {
+          "label": "Reparar plan del día",
+          "description": "Reparar comidas inseguras o incompletas."
+        }
       },
       "portionCalculator": {
-        "explainGrams": { "label": "Explicar gramos", "description": "Explicar porciones por comensal y producción." },
-        "batchSize": { "label": "Sugerir lote", "description": "Recomendar cantidades para preparación." }
+        "explainGrams": {
+          "label": "Explicar gramos",
+          "description": "Explicar porciones por comensal y producción."
+        },
+        "batchSize": {
+          "label": "Sugerir lote",
+          "description": "Recomendar cantidades para preparación."
+        }
       },
       "pantry": {
-        "usePantry": { "label": "Sugerir con despensa", "description": "Usar primero ingredientes disponibles." },
-        "expiringItems": { "label": "Usar próximos a vencer", "description": "Priorizar ingredientes antes de vencer." }
+        "usePantry": {
+          "label": "Sugerir con despensa",
+          "description": "Usar primero ingredientes disponibles."
+        },
+        "expiringItems": {
+          "label": "Usar próximos a vencer",
+          "description": "Priorizar ingredientes antes de vencer."
+        }
       },
       "freezer": {
-        "freezerFirst": { "label": "Usar freezer primero", "description": "Sugerir comidas preparadas que deben usarse pronto." },
-        "reheatingPlan": { "label": "Plan de recalentado", "description": "Crear nota de recalentado para cocina." }
+        "freezerFirst": {
+          "label": "Usar freezer primero",
+          "description": "Sugerir comidas preparadas que deben usarse pronto."
+        },
+        "reheatingPlan": {
+          "label": "Plan de recalentado",
+          "description": "Crear nota de recalentado para cocina."
+        }
       },
       "shopping": {
-        "prioritize": { "label": "Priorizar compras", "description": "Ordenar faltantes por urgencia." },
-        "explainMissing": { "label": "Explicar faltantes", "description": "Explicar por qué faltan o son urgentes." }
+        "prioritize": {
+          "label": "Priorizar compras",
+          "description": "Ordenar faltantes por urgencia."
+        },
+        "explainMissing": {
+          "label": "Explicar faltantes",
+          "description": "Explicar por qué faltan o son urgentes."
+        }
       },
       "allergies": {
-        "testIngredient": { "label": "Probar con IA", "description": "Revisar riesgo con contexto de alergias." },
-        "safeAlternative": { "label": "Sugerir alternativa", "description": "Buscar sustituciones más seguras." }
+        "testIngredient": {
+          "label": "Probar con IA",
+          "description": "Revisar riesgo con contexto de alergias."
+        },
+        "safeAlternative": {
+          "label": "Sugerir alternativa",
+          "description": "Buscar sustituciones más seguras."
+        }
       },
       "nutrition": {
-        "explainGaps": { "label": "Explicar brechas", "description": "Explicar brechas de calorías y proteína." },
-        "highProteinMeal": { "label": "Sugerir alta proteína", "description": "Sugerir comida segura con más proteína." }
+        "explainGaps": {
+          "label": "Explicar brechas",
+          "description": "Explicar brechas de calorías y proteína."
+        },
+        "highProteinMeal": {
+          "label": "Sugerir alta proteína",
+          "description": "Sugerir comida segura con más proteína."
+        }
       },
       "alerts": {
-        "explainAlerts": { "label": "Explicar alertas", "description": "Resumir causas y siguientes pasos." },
-        "nextResolution": { "label": "Sugerir resolución", "description": "Priorizar qué resolver primero." }
+        "explainAlerts": {
+          "label": "Explicar alertas",
+          "description": "Resumir causas y siguientes pasos."
+        },
+        "nextResolution": {
+          "label": "Sugerir resolución",
+          "description": "Priorizar qué resolver primero."
+        }
       },
       "reports": {
-        "summarize": { "label": "Resumir reporte", "description": "Crear nota de chef desde el reporte actual." },
-        "explainWarnings": { "label": "Explicar advertencias", "description": "Explicar filas incompletas o riesgosas." }
+        "summarize": {
+          "label": "Resumir reporte",
+          "description": "Crear nota de chef desde el reporte actual."
+        },
+        "explainWarnings": {
+          "label": "Explicar advertencias",
+          "description": "Explicar filas incompletas o riesgosas."
+        }
       },
       "settings": {
-        "explainGemini": { "label": "Explicar Gemini", "description": "Explicar clave, límites y modelo." },
-        "testKey": { "label": "Probar clave", "description": "Guiar la prueba de la clave Gemini." }
+        "explainGemini": {
+          "label": "Explicar Gemini",
+          "description": "Explicar clave, límites y modelo."
+        },
+        "testKey": {
+          "label": "Probar clave",
+          "description": "Guiar la prueba de la clave Gemini."
+        }
       }
     }
   },

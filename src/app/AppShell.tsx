@@ -23,7 +23,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import LoadingSkeleton from '../components/feedback/LoadingSkeleton'
 import AiCopilotButton from '../features/ai-copilot/components/AiCopilotButton'
 import AiCopilotProvider from '../features/ai-copilot/components/AiCopilotProvider'
@@ -63,8 +63,10 @@ function AppShellFrame() {
   const { profile, logout, updateProfile } = useAuth()
   const { data, isDataLoading } = useAppData()
   const navigate = useNavigate()
+  const location = useLocation()
   const [open, setOpen] = useState(false)
   const unreadAlerts = data.alerts.filter((alert) => !alert.is_read).length
+  const isAiChefRoute = location.pathname.includes('/app/ai-chef')
 
   const changeLanguage = (language: 'en' | 'es') => {
     i18n.changeLanguage(language)
@@ -74,7 +76,8 @@ function AppShellFrame() {
 
   return (
     <div className="min-h-screen bg-cream-50 text-slate-950 lg:grid lg:grid-cols-[280px_1fr]">
-      <aside className={cn('fixed inset-y-0 left-0 z-40 w-72 border-r border-stone-200 bg-white p-4 shadow-panel transition lg:static lg:block lg:translate-x-0', open ? 'translate-x-0' : '-translate-x-full')} data-testid="app-sidebar">
+      {open && <button type="button" className="fixed inset-0 z-30 bg-slate-950/30 lg:hidden" aria-label={t('common.close')} onClick={() => setOpen(false)} />}
+      <aside id="app-sidebar" className={cn('fixed inset-y-0 left-0 z-40 w-72 border-r border-stone-200 bg-white p-4 shadow-panel transition lg:static lg:block lg:translate-x-0', open ? 'translate-x-0' : '-translate-x-full')} data-testid="app-sidebar">
         <div className="flex items-center gap-3 px-2 py-2">
           <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-forest-900 text-white">
             <ChefHat className="h-5 w-5" aria-hidden="true" />
@@ -123,7 +126,7 @@ function AppShellFrame() {
       <div className="min-w-0">
         <header className="sticky top-0 z-30 border-b border-stone-200 bg-cream-50/90 px-4 py-3 backdrop-blur lg:px-8">
           <div className="flex items-center gap-3">
-            <button type="button" className="rounded-md p-2 text-slate-700 hover:bg-stone-100 focus-ring lg:hidden" onClick={() => setOpen((value) => !value)} aria-label={t('nav.dashboard')} data-testid="mobile-nav-toggle">
+            <button type="button" className="rounded-md p-2 text-slate-700 hover:bg-stone-100 focus-ring lg:hidden" onClick={() => setOpen((value) => !value)} aria-label={t('nav.openMenu')} aria-controls="app-sidebar" aria-expanded={open} data-testid="mobile-nav-toggle">
               <Menu className="h-5 w-5" aria-hidden="true" />
             </button>
             <div className="relative min-w-0 flex-1">
@@ -139,7 +142,7 @@ function AppShellFrame() {
             >
               {data.families.length === 0 ? <option value="">{t('empty.families')}</option> : data.families.map((family) => <option key={family.id} value={family.id}>{family.name}</option>)}
             </select>
-            <AiCopilotButton compact testId="app-shell-ai-copilot" />
+            {!isAiChefRoute && <AiCopilotButton compact testId="app-shell-ai-copilot" />}
             <label className="flex items-center gap-2 text-xs text-slate-700">
               <Languages className="h-4 w-4" aria-hidden="true" />
               <span className="sr-only">{t('common.language')}</span>
@@ -157,8 +160,9 @@ function AppShellFrame() {
               <p className="text-sm font-semibold text-slate-900">{profile?.full_name}</p>
               <p className="text-xs text-slate-500" data-testid="role-indicator">{profile ? t(`roles.${profile.role}`) : t('common.demoMode')}</p>
             </div>
-            <button type="button" className="rounded-md px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-stone-100 focus-ring" onClick={logout}>
-              {t('common.signOut')}
+            <button type="button" className="rounded-md px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-stone-100 focus-ring" onClick={logout} aria-label={t('common.signOut')}>
+              <span className="hidden sm:inline">{t('common.signOut')}</span>
+              <span className="sm:hidden">{t('common.signOutShort')}</span>
             </button>
           </div>
         </header>

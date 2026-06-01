@@ -10,6 +10,7 @@ export default function AiCopilotDrawer() {
   const copilot = useAiCopilot()
   const { closeCopilot, open } = copilot
   const closeButtonRef = useRef<HTMLButtonElement | null>(null)
+  const drawerRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     if (!open) return undefined
@@ -17,7 +18,27 @@ export default function AiCopilotDrawer() {
     closeButtonRef.current?.focus()
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeCopilot()
+      if (event.key === 'Escape') {
+        closeCopilot()
+        return
+      }
+      if (event.key !== 'Tab') return
+      const focusable = Array.from(drawerRef.current?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), details summary, [tabindex]:not([tabindex="-1"])',
+      ) || []).filter((element) => element.offsetParent !== null)
+      if (focusable.length === 0) {
+        event.preventDefault()
+        return
+      }
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
     document.addEventListener('keydown', onKeyDown)
     return () => {
@@ -31,6 +52,7 @@ export default function AiCopilotDrawer() {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 sm:items-stretch sm:justify-end" data-testid="ai-copilot-drawer">
       <aside
+        ref={drawerRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="ai-copilot-title"

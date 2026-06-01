@@ -73,7 +73,10 @@ export default function AiChefPage() {
 
   const applySuggestion = (suggestion: Record<string, unknown>) => {
     if (!canWrite) return
-    if (suggestion.safety_status !== 'safe' && suggestion.usable !== true) return
+    if (suggestion.safety_status !== 'safe' || suggestion.usable !== true) {
+      setMessage(t('ai.reviewNeededStructuredData'))
+      return
+    }
     const recipeId = typeof suggestion.recipe_id === 'string' && data.recipes.some((recipe) => recipe.id === suggestion.recipe_id)
       ? suggestion.recipe_id
       : null

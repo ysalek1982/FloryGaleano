@@ -14,6 +14,10 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return json({ ok: true })
 
   try {
+    const contentLength = Number(req.headers.get('content-length') || 0)
+    if (Number.isFinite(contentLength) && contentLength > 50_000) {
+      return json({ error: 'AI key request is too large.' }, 413)
+    }
     const body = await req.json().catch(() => null)
     if (!body || typeof body !== 'object') return json({ error: 'Malformed AI key request.' }, 400)
     const action = String(body?.action || 'get_status')
@@ -223,9 +227,12 @@ async function testGeminiKey(apiKey: string, model: string) {
 
 async function listGeminiModels(apiKey: string) {
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
     })
     const body = await response.json().catch(() => null)
     if (response.ok) {

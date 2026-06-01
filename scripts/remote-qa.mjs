@@ -160,6 +160,17 @@ async function testRls() {
   const viewerSigned = await signIn(viewer)
   const superSigned = await signIn(superAdmin)
 
+  await expectMutationFailure(
+    a.client.from('profiles').update({ role: 'super_admin' }).eq('id', userA.id).select(),
+    'User A must not self-promote profile role',
+  )
+  await expectMutationFailure(
+    a.client.from('user_ai_settings').insert({ profile_id: userB.id, provider: 'gemini', model: 'gemini-2.5-flash' }).select(),
+    'User A must not write User B AI settings',
+  )
+  const rawAiSettings = await a.client.from('user_ai_settings').select('encrypted_key,key_iv,vault_secret_id').eq('profile_id', userB.id)
+  assert(rawAiSettings.error || !rawAiSettings.data || rawAiSettings.data.length === 0, 'User A must not read raw User B AI key storage fields')
+
   await assertCanReadFamily(a.client, familyA.id, true, 'User A should read Family A')
   await assertCanReadFamily(a.client, familyB.id, false, 'User A must not read Family B')
   await assertCanReadFamily(b.client, familyA.id, false, 'User B must not read Family A')
@@ -752,8 +763,12 @@ async function assertFilteredCount(client, table, column, value, expected, messa
 }
 
 async function expectInsertFailure(builder, message) {
+  await expectMutationFailure(builder, message)
+}
+
+async function expectMutationFailure(builder, message) {
   const result = await builder
-  assert(result.error || !result.data || result.data.length === 0, `${message}: insert unexpectedly succeeded`)
+  assert(result.error || !result.data || result.data.length === 0, `${message}: mutation unexpectedly succeeded`)
 }
 
 async function insertOk(builder, label) {

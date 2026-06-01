@@ -23,6 +23,7 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD_STAGING }}
       APP_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_APP_SUPABASE_SERVICE_ROLE_KEY }}
+      APP_USER_SECRET_ENCRYPTION_KEY: ${{ secrets.STAGING_APP_USER_SECRET_ENCRYPTION_KEY }}
       GEMINI_API_KEY: ${{ secrets.STAGING_GEMINI_API_KEY }}
       GEMINI_MODEL: ${{ secrets.STAGING_GEMINI_MODEL }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -47,7 +48,7 @@ jobs:
         shell: bash
         run: |
           if [[ -n "$VITE_SUPABASE_URL" && -n "$VITE_SUPABASE_PUBLISHABLE_KEY" ]]; then
-            npm run validate:env
+            npm run validate:env -- --mode staging --strict
           else
             echo "Staging frontend environment is incomplete; deploy steps will be skipped."
           fi
@@ -102,10 +103,16 @@ jobs:
           if [[ -n "$APP_SUPABASE_SERVICE_ROLE_KEY" ]]; then
             npx supabase secrets set APP_SUPABASE_SERVICE_ROLE_KEY="$APP_SUPABASE_SERVICE_ROLE_KEY" --project-ref "$SUPABASE_PROJECT_REF"
           fi
+          if [[ -n "$APP_USER_SECRET_ENCRYPTION_KEY" ]]; then
+            npx supabase secrets set APP_USER_SECRET_ENCRYPTION_KEY="$APP_USER_SECRET_ENCRYPTION_KEY" --project-ref "$SUPABASE_PROJECT_REF"
+          fi
 
-      - name: Deploy ai-chef Edge Function to staging
+      - name: Deploy Edge Functions to staging
         if: ${{ env.SUPABASE_PROJECT_REF != '' && env.SUPABASE_ACCESS_TOKEN != '' }}
-        run: npx supabase functions deploy ai-chef --project-ref "$SUPABASE_PROJECT_REF"
+        shell: bash
+        run: |
+          npx supabase functions deploy ai-chef --project-ref "$SUPABASE_PROJECT_REF"
+          npx supabase functions deploy ai-key-manager --project-ref "$SUPABASE_PROJECT_REF"
 
       - name: Deploy Vercel preview for staging
         if: ${{ env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != '' && env.VITE_SUPABASE_URL != '' && env.VITE_SUPABASE_PUBLISHABLE_KEY != '' }}
@@ -114,11 +121,14 @@ jobs:
           npm install -g vercel@39
           vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
           vercel build --token="$VERCEL_TOKEN"
-          vercel deploy --prebuilt --token="$VERCEL_TOKEN"
+          DEPLOY_URL="$(vercel deploy --prebuilt --token="$VERCEL_TOKEN" | tail -n 1)"
+          echo "DEPLOY_URL=$DEPLOY_URL" >> "$GITHUB_ENV"
+          echo "Preview deployment URL captured."
 
       - name: Skip staging deploy
         if: ${{ env.VERCEL_TOKEN == '' || env.VERCEL_ORG_ID == '' || env.VERCEL_PROJECT_ID == '' || env.VITE_SUPABASE_URL == '' || env.VITE_SUPABASE_PUBLISHABLE_KEY == '' }}
         run: echo "Skipping staging deploy because required staging or Vercel secrets are not configured."
 
       - name: Post-deploy staging smoke
-        run: npm run smoke:staging
+        shell: bash
+        run: npm run smoke:staging -- --url "${DEPLOY_URL:-$STAGING_URL}"

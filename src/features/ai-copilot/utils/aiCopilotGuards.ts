@@ -52,7 +52,7 @@ export function canApplyCopilotSuggestion(suggestion: AiCopilotSuggestion, canWr
     return Boolean(suggestion.data.ingredient_id && suggestion.data.quantity)
   }
   if (suggestion.apply_option === 'apply_recipe_patch') {
-    return Boolean(suggestion.data.recipe_id)
+    return false
   }
   return false
 }
@@ -65,6 +65,7 @@ export function getApplyBlockReasonKey(suggestion: AiCopilotSuggestion, canWrite
   if (suggestion.apply_option === 'apply_recipe_patch' && suggestion.data?.recipe_payload && !suggestion.data?.recipe_id) {
     return 'aiCopilot.openRecipeBuilderRequired'
   }
+  if (suggestion.apply_option === 'apply_recipe_patch') return 'aiCopilot.recipePatchNotImplemented'
   if (!canApplyCopilotSuggestion(suggestion, canWrite)) return 'aiCopilot.applyMissingData'
   return ''
 }

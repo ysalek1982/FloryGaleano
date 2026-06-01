@@ -23,8 +23,7 @@ export function DayAiSuggestionsPanel({
         ) : (
           state.aiSuggestions.map((suggestion, index) => {
             const status = suggestion.safety_status || 'review_needed'
-            const blocked = status === 'blocked'
-            const review = status === 'review_needed' && !suggestion.usable
+            const canApply = status === 'safe' && suggestion.usable === true
             return (
               <div key={`${suggestion.title}-${index}`} className="rounded-md border border-stone-200 bg-white p-3">
                 <div className="flex items-start justify-between gap-3">
@@ -34,8 +33,8 @@ export function DayAiSuggestionsPanel({
                   </div>
                   <Badge status={status}>{t(status === 'review_needed' ? 'common.reviewNeeded' : `common.${status}`)}</Badge>
                 </div>
-                <Button className="mt-3" variant="secondary" disabled={blocked || review} onClick={() => onApply(suggestion)}>
-                  {blocked ? t('dayPlanner.blockedSuggestion') : review ? t('dayPlanner.reviewRequired') : t('ai.applySuggestion')}
+                <Button className="mt-3" variant="secondary" disabled={!canApply} onClick={() => onApply(suggestion)}>
+                  {status === 'blocked' ? t('dayPlanner.blockedSuggestion') : status === 'review_needed' ? t('dayPlanner.reviewRequired') : t('ai.applySuggestion')}
                 </Button>
               </div>
             )

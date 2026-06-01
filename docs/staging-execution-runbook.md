@@ -36,7 +36,9 @@ Set staging Edge Function secrets in the staging Supabase project:
 npx supabase secrets set GEMINI_API_KEY="<STAGING_GEMINI_API_KEY>"
 npx supabase secrets set GEMINI_MODEL="gemini-2.5-flash"
 npx supabase secrets set APP_SUPABASE_SERVICE_ROLE_KEY="<STAGING_SERVICE_ROLE_KEY>"
+npx supabase secrets set APP_USER_SECRET_ENCRYPTION_KEY="<STAGING_USER_SECRET_ENCRYPTION_KEY>"
 npx supabase functions deploy ai-chef
+npx supabase functions deploy ai-key-manager
 ```
 
 `APP_SUPABASE_SERVICE_ROLE_KEY` is the optional custom fallback. Supabase may provide `SUPABASE_SERVICE_ROLE_KEY` to Edge Functions automatically.

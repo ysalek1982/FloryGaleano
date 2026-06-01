@@ -33,7 +33,7 @@ export default function AiCopilotButton({
       aria-label={t(labelKey)}
     >
       <Brain className="h-4 w-4" aria-hidden="true" />
-      <span>{t(labelKey)}</span>
+      <span className={compact ? 'hidden sm:inline' : undefined}>{t(labelKey)}</span>
       {!compact && <Badge status={availability.tone}>{t(availability.badgeKey)}</Badge>}
     </Button>
   )

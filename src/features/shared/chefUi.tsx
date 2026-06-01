@@ -1,5 +1,6 @@
 import { XCircle } from 'lucide-react'
 import type React from 'react'
+import { useEffect, useId, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useAppData } from '../../lib/AppState'
@@ -211,11 +212,59 @@ export function SkeletonBlock() {
 
 export function Dialog({ title, children, onClose, wide = false }: { title: string; children: React.ReactNode; onClose: () => void; wide?: boolean }) {
   const { t } = useTranslation()
+  const titleId = useId()
+  const panelRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const focusableSelector = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), details summary, [tabindex]:not([tabindex="-1"])'
+    const focusable = Array.from(panelRef.current?.querySelectorAll<HTMLElement>(focusableSelector) || [])
+    ;(focusable[0] || panelRef.current)?.focus()
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (event.key !== 'Tab') return
+      const items = Array.from(panelRef.current?.querySelectorAll<HTMLElement>(focusableSelector) || [])
+        .filter((element) => element.offsetParent !== null)
+      if (items.length === 0) {
+        event.preventDefault()
+        return
+      }
+      const first = items[0]
+      const last = items[items.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', onKeyDown)
+      previousFocus?.focus()
+    }
+  }, [onClose])
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
-      <div className={cn('max-h-[92vh] w-full overflow-auto rounded-lg bg-white p-5 shadow-soft', wide ? 'max-w-4xl' : 'max-w-lg')}>
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className={cn('max-h-[92vh] w-full overflow-auto rounded-lg bg-white p-5 shadow-soft focus:outline-none', wide ? 'max-w-4xl' : 'max-w-lg')}
+      >
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="font-serif text-2xl font-semibold">{title}</h2>
+          <h2 id={titleId} className="font-serif text-2xl font-semibold">{title}</h2>
           <Button variant="ghost" onClick={onClose}><XCircle className="h-4 w-4" />{t('common.cancel')}</Button>
         </div>
         {children}
@@ -239,7 +288,7 @@ export function ResponsiveTable({ headers, rows }: { headers: string[]; rows: Re
     <div className="overflow-x-auto rounded-lg border border-stone-200">
       <table className="min-w-full divide-y divide-stone-200 text-sm">
         <thead className="table-head">
-          <tr>{headers.map((header) => <th key={header} className="px-4 py-3">{header}</th>)}</tr>
+          <tr>{headers.map((header) => <th key={header} scope="col" className="px-4 py-3">{header}</th>)}</tr>
         </thead>
         <tbody className="divide-y divide-stone-100 bg-white">
           {rows.map((row, index) => (

@@ -23,6 +23,16 @@ for (const file of files) {
   if (/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/.test(source) && /service_role/i.test(source)) {
     findings.push(`Possible service role JWT in ${file}`)
   }
+  if (/generativelanguage\.googleapis\.com[\s\S]{0,120}\?key=\$\{?apiKey/i.test(source)) {
+    findings.push(`Gemini API keys must be sent via x-goog-api-key header, not URL query string: ${file}`)
+  }
+  const historicalRoleMetadataMigration = [
+    'supabase/migrations/20260523152000_initial_schema.sql',
+    'supabase/migrations/20260523170000_production_rls_seed_ai.sql',
+  ].includes(file)
+  if (/raw_user_meta_data\s*->>\s*['"]role['"]/.test(source) && !historicalRoleMetadataMigration) {
+    findings.push(`Auth user metadata must not control profile roles: ${file}`)
+  }
 
   const isFrontend = file.startsWith('src/') && !file.startsWith('src/test/')
   if (isFrontend && /(SUPABASE_SERVICE_ROLE_KEY|APP_SUPABASE_SERVICE_ROLE_KEY|SUPABASE_DB_PASSWORD|GEMINI_API_KEY|service_role)/.test(source)) {
@@ -39,6 +49,18 @@ for (const file of files) {
     if (unsafeRecipeIngredientLoad) {
       findings.push('ai-chef must filter recipe_ingredients by accessible recipe IDs')
     }
+  }
+}
+
+for (const functionDir of listSupabaseFunctions()) {
+  const name = functionDir.split('/').pop()
+  const deployPattern = new RegExp(`functions\\s+deploy\\s+${escapeRegExp(name)}\\b`)
+  const workflows = tracked
+    .filter((file) => file.startsWith('.github/workflows/') && /\.ya?ml$/.test(file))
+    .map((file) => readFileSync(resolve(root, file), 'utf8'))
+    .join('\n')
+  if (!deployPattern.test(workflows) && !/functions\s+deploy\s+--all\b/.test(workflows)) {
+    findings.push(`Supabase function ${name} is not deployed by CI workflows`)
   }
 }
 
@@ -82,4 +104,16 @@ function shouldScan(file) {
   if (/^\.env($|\.)/.test(file)) return false
   if (/\.(png|jpe?g|gif|webp|ico|woff2?|ttf|pdf|xlsx|csv)$/i.test(file)) return false
   return /\.(ts|tsx|js|jsx|mjs|json|md|yml|yaml|html|css|sql|toml)$/i.test(file)
+}
+
+function listSupabaseFunctions() {
+  const base = resolve(root, 'supabase/functions')
+  if (!existsSync(base)) return []
+  return readdirSync(base, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => `supabase/functions/${entry.name}`)
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }

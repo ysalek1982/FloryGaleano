@@ -22,10 +22,12 @@ Use this checklist before promoting Smart Family Meals toward production. The st
   npx supabase secrets set GEMINI_API_KEY="$env:GEMINI_API_KEY" --project-ref "<staging-project-ref>"
   npx supabase secrets set GEMINI_MODEL="$env:GEMINI_MODEL" --project-ref "<staging-project-ref>"
   npx supabase secrets set APP_SUPABASE_SERVICE_ROLE_KEY="$env:SUPABASE_SERVICE_ROLE_KEY" --project-ref "<staging-project-ref>"
+  npx supabase secrets set APP_USER_SECRET_ENCRYPTION_KEY="$env:APP_USER_SECRET_ENCRYPTION_KEY" --project-ref "<staging-project-ref>"
   ```
-- [ ] Deploy ai-chef:
+- [ ] Deploy Edge Functions:
   ```powershell
   npx supabase functions deploy ai-chef --project-ref "<staging-project-ref>"
+  npx supabase functions deploy ai-key-manager --project-ref "<staging-project-ref>"
   ```
 - [ ] Verify RLS with staging credentials.
 - [ ] Run staging smoke tests.

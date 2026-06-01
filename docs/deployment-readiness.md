@@ -44,6 +44,7 @@ Do not make manual dashboard schema edits unless a production incident requires 
 npx supabase secrets set GEMINI_API_KEY="$GEMINI_API_KEY"
 npx supabase secrets set GEMINI_MODEL="${GEMINI_MODEL:-gemini-2.5-flash}"
 npx supabase secrets set APP_SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY"
+npx supabase secrets set APP_USER_SECRET_ENCRYPTION_KEY="$APP_USER_SECRET_ENCRYPTION_KEY"
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` is reserved by Supabase and may already be available inside Edge Functions. Use `APP_SUPABASE_SERVICE_ROLE_KEY` only as the optional custom fallback.
@@ -52,6 +53,7 @@ npx supabase secrets set APP_SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_K
 
 ```bash
 npx supabase functions deploy ai-chef
+npx supabase functions deploy ai-key-manager
 ```
 
 Post-deploy checks:

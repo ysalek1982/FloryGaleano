@@ -22,7 +22,8 @@ try {
 
 console.log(`Post-deploy smoke target: ${origin.host}`)
 try {
-  await checkPublicRoute('/', 'landing')
+  const landingBody = await checkPublicRoute('/', 'landing')
+  await checkAssetReferences(landingBody)
   await checkPublicRoute('/login', 'login')
   await checkProtectedRoute('/app/dashboard')
   console.log('PASS post-deploy smoke complete')
@@ -41,6 +42,23 @@ async function checkPublicRoute(path, label) {
     throw new Error(`${label} route did not look like the Smart Family Meals app shell`)
   }
   console.log(`PASS ${label} route returned ${response.status}`)
+  return body
+}
+
+async function checkAssetReferences(body) {
+  const assets = new Set()
+  for (const match of body.matchAll(/<(?:script|link)[^>]+(?:src|href)="([^"]+)"/g)) {
+    const value = match[1]
+    if (value.startsWith('/assets/')) assets.add(value)
+  }
+  if (assets.size === 0) throw new Error('landing route did not include built asset references')
+  for (const asset of Array.from(assets).slice(0, 8)) {
+    const response = await fetch(new URL(asset, origin), { redirect: 'follow' })
+    if (!response.ok) throw new Error(`asset ${asset} returned HTTP ${response.status}`)
+    const cacheControl = response.headers.get('cache-control') || ''
+    if (!/immutable/i.test(cacheControl)) throw new Error(`asset ${asset} is missing immutable cache headers`)
+  }
+  console.log(`PASS ${assets.size} built asset reference(s) returned 200 with immutable caching`)
 }
 
 async function checkProtectedRoute(path) {

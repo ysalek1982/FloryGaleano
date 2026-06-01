@@ -8,13 +8,15 @@ export default defineConfig({
     rolldownOptions: {
       output: {
         manualChunks(id) {
-          if (!id.includes('node_modules')) return
-          if (id.includes('react') || id.includes('scheduler')) return 'react-vendor'
-          if (id.includes('@supabase')) return 'supabase-vendor'
-          if (id.includes('write-excel-file') || id.includes('fflate')) return 'exports-vendor'
-          if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('zod')) return 'forms-vendor'
-          if (id.includes('i18next') || id.includes('react-i18next')) return 'i18n-vendor'
-          if (id.includes('lucide-react')) return 'icons-vendor'
+          const normalized = id.replaceAll('\\', '/')
+          if (!normalized.includes('/node_modules/')) return
+          const pkg = (name: string) => normalized.includes(`/node_modules/${name}/`)
+          if (pkg('lucide-react')) return 'icons-vendor'
+          if (pkg('@supabase/supabase-js') || pkg('@supabase/auth-js') || pkg('@supabase/functions-js') || pkg('@supabase/postgrest-js') || pkg('@supabase/realtime-js') || pkg('@supabase/storage-js')) return 'supabase-vendor'
+          if (pkg('write-excel-file') || pkg('fflate')) return 'exports-vendor'
+          if (pkg('react-hook-form') || pkg('@hookform/resolvers') || pkg('zod')) return 'forms-vendor'
+          if (pkg('i18next') || pkg('react-i18next') || pkg('i18next-browser-languagedetector')) return 'i18n-vendor'
+          if (pkg('react') || pkg('react-dom') || pkg('scheduler')) return 'react-vendor'
           return 'vendor'
         },
       },

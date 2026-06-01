@@ -55,5 +55,7 @@ describe('Supabase RLS migration', () => {
     expect(migration).toContain('public.has_family_membership')
     expect(migration).toContain('revoke all on public.user_ai_settings from anon, authenticated')
     expect(migration).toContain('create policy food_categories_select')
+    expect(migration).toContain('prevent_profile_role_client_update')
+    expect(migration).toContain('Profile role changes require administrator privileges')
   })
 })

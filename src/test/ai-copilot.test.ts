@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { getAiCopilotActions } from '../features/ai-copilot/utils/aiCopilotRegistry'
-import { canApplyCopilotSuggestion, getCopilotAvailability } from '../features/ai-copilot/utils/aiCopilotGuards'
+import { canApplyCopilotSuggestion, getApplyBlockReasonKey, getCopilotAvailability } from '../features/ai-copilot/utils/aiCopilotGuards'
 import type { AiKeyStatus } from '../features/settings/hooks/useAiConnectionTest'
 
 const validStatus: AiKeyStatus = {
@@ -37,5 +37,23 @@ describe('AI Copilot', () => {
     expect(canApplyCopilotSuggestion({ status: 'safe', apply_option: 'apply_menu_patch', data: {} }, true)).toBe(false)
     expect(canApplyCopilotSuggestion({ status: 'safe', apply_option: 'apply_menu_patch', data: { recipe_id: 'recipe-1', planned_date: '2026-05-24', meal_time: 'dinner' } }, true)).toBe(true)
     expect(canApplyCopilotSuggestion({ status: 'blocked', apply_option: 'apply_menu_patch', data: { recipe_id: 'recipe-1', planned_date: '2026-05-24', meal_time: 'dinner' } }, true)).toBe(false)
+  })
+
+  it('blocks read-only users and unsupported apply options', () => {
+    expect(canApplyCopilotSuggestion({ status: 'safe', apply_option: 'create_shopping_item', data: { ingredient_id: 'ingredient-1', quantity: 200 } }, false)).toBe(false)
+    expect(getApplyBlockReasonKey({ status: 'safe', apply_option: 'create_shopping_item', data: { ingredient_id: 'ingredient-1', quantity: 200 } }, false)).toBe('roles.readOnly')
+    expect(canApplyCopilotSuggestion({ status: 'safe', apply_option: 'apply_recipe_patch', data: { recipe_id: 'recipe-1' } }, true)).toBe(false)
+    expect(getApplyBlockReasonKey({ status: 'safe', apply_option: 'apply_recipe_patch', data: { recipe_id: 'recipe-1' } }, true)).toBe('aiCopilot.recipePatchNotImplemented')
+    expect(canApplyCopilotSuggestion({ status: 'safe', apply_option: 'create_alert', data: { title: 'Review' } }, true)).toBe(false)
+  })
+
+  it('allows retry after an expired rate limit cooldown', () => {
+    const availability = getCopilotAvailability({
+      ...validStatus,
+      configured: false,
+      key_status: 'rate_limited',
+      retry_after_seconds: 0,
+    })
+    expect(availability.canRun).toBe(true)
   })
 })

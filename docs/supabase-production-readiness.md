@@ -45,7 +45,9 @@ Confirm these application tables exist and RLS is enabled before sign-off:
 npx supabase secrets set GEMINI_API_KEY="$env:GEMINI_API_KEY" --project-ref "<project-ref>"
 npx supabase secrets set GEMINI_MODEL="$env:GEMINI_MODEL" --project-ref "<project-ref>"
 npx supabase secrets set APP_SUPABASE_SERVICE_ROLE_KEY="$env:SUPABASE_SERVICE_ROLE_KEY" --project-ref "<project-ref>"
+npx supabase secrets set APP_USER_SECRET_ENCRYPTION_KEY="$env:APP_USER_SECRET_ENCRYPTION_KEY" --project-ref "<project-ref>"
 npx supabase functions deploy ai-chef --project-ref "<project-ref>"
+npx supabase functions deploy ai-key-manager --project-ref "<project-ref>"
 ```
 
 The frontend must never receive `SUPABASE_SERVICE_ROLE_KEY`, `APP_SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_PASSWORD`, or `GEMINI_API_KEY`.

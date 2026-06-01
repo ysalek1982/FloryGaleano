@@ -69,6 +69,7 @@ npx supabase link --project-ref "<project-ref>"
 npx supabase db push
 npx supabase migration list
 npx supabase functions deploy ai-chef --project-ref "<project-ref>"
+npx supabase functions deploy ai-key-manager --project-ref "<project-ref>"
 ```
 
 ## Production Safeguards
