@@ -5,9 +5,9 @@ export default {
     extend: {
       colors: {
         cream: {
-          50: '#faf7f0',
-          100: '#f3eadb',
-          200: '#e6d3b8',
+          50: '#fbf7ed',
+          100: '#f2e7d3',
+          200: '#dec6a2',
         },
         forest: {
           50: '#eff8f2',
@@ -18,9 +18,16 @@ export default {
           900: '#123424',
         },
         saffron: {
+          50: '#fff8df',
           100: '#fff2cc',
           500: '#d8941f',
           600: '#b87916',
+        },
+        copper: {
+          50: '#fff4ed',
+          100: '#ffe3d0',
+          500: '#b75e28',
+          700: '#7d3818',
         },
         danger: {
           50: '#fff1f2',
@@ -36,12 +43,13 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'Segoe UI', 'sans-serif'],
-        serif: ['Fraunces', 'Georgia', 'serif'],
+        sans: ['Aptos', 'Avenir Next', 'Segoe UI Variable', 'Segoe UI', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        serif: ['Cormorant Garamond', 'Georgia', 'Cambria', 'serif'],
       },
       boxShadow: {
-        soft: '0 18px 50px rgba(41, 33, 22, 0.08)',
-        panel: '0 10px 28px rgba(15, 23, 42, 0.08)',
+        soft: '0 22px 60px rgba(53, 42, 25, 0.12)',
+        panel: '0 14px 34px rgba(30, 41, 59, 0.10)',
+        inset: 'inset 0 1px 0 rgba(255,255,255,0.8)',
       },
     },
   },

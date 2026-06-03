@@ -9,6 +9,9 @@ export function ExportPreviewDialog({ report, onClose }: { report: ExportReport;
   return (
     <Dialog title={t('exports.preview')} onClose={onClose}>
       <div className="grid gap-4">
+        <div className="flex justify-end">
+          <Button variant="secondary" onClick={onClose}>{t('common.close')}</Button>
+        </div>
         <div className="rounded-md bg-stone-50 p-3 text-sm text-slate-700">
           <p><strong>{t('reports.reportTitle')}:</strong> {report.title}</p>
           <p><strong>{t('common.family')}:</strong> {report.familyName}</p>
@@ -19,7 +22,6 @@ export function ExportPreviewDialog({ report, onClose }: { report: ExportReport;
           headers={[t('exports.sheet'), t('exports.rows')]}
           rows={report.sheets.map((sheet) => [sheet.name, sheet.rows.length])}
         />
-        <Button variant="secondary" onClick={onClose}>{t('common.close')}</Button>
       </div>
     </Dialog>
   )

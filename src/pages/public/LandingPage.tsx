@@ -26,12 +26,12 @@ export default function LandingPage() {
     <div className="min-h-screen bg-cream-50 text-slate-950">
       <header className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5">
         <Link to="/" className="flex items-center gap-3 focus-ring" aria-label={t('brand.name')}>
-          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-forest-900 text-white">
+          <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-gradient-to-br from-forest-900 to-copper-700 text-white shadow-sm">
             <ChefHat className="h-5 w-5" aria-hidden="true" />
           </span>
           <span>
-            <span className="block font-serif text-xl font-semibold">{t('brand.name')}</span>
-            <span className="text-xs uppercase tracking-[0.2em] text-slate-500">{t('brand.byline')}</span>
+            <span className="block font-serif text-2xl font-semibold leading-none">{t('brand.name')}</span>
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-copper-700">{t('brand.byline')}</span>
           </span>
         </Link>
         <div className="flex items-center gap-3">
@@ -39,7 +39,7 @@ export default function LandingPage() {
           <Link to="/login" className="hidden rounded-md px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-white sm:inline-flex">
             {t('common.signIn')}
           </Link>
-          <Link to="/register" className="rounded-md bg-forest-700 px-4 py-2 text-sm font-semibold text-white hover:bg-forest-600 focus-ring">
+          <Link to="/register" className="rounded-md bg-forest-900 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-forest-700 focus-ring">
             {t('common.createAccount')}
           </Link>
         </div>
@@ -49,12 +49,12 @@ export default function LandingPage() {
         <section className="mx-auto grid max-w-7xl gap-12 px-5 pb-16 pt-10 lg:grid-cols-[1fr_0.85fr] lg:items-center">
           <div>
             <Badge status="safe">{t('brand.subtitle')}</Badge>
-            <h1 className="mt-6 max-w-4xl font-serif text-5xl font-semibold leading-tight text-slate-950 md:text-6xl">
+            <h1 className="mt-6 max-w-4xl font-serif text-6xl font-semibold leading-[0.95] text-slate-950 md:text-7xl">
               {t('landing.heroTitle')}
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-650">{t('landing.heroSubtitle')}</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/register" className="inline-flex items-center gap-2 rounded-md bg-forest-700 px-5 py-3 text-sm font-semibold text-white hover:bg-forest-600 focus-ring">
+              <Link to="/register" className="inline-flex items-center gap-2 rounded-md bg-forest-900 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-forest-700 focus-ring">
                 <CalendarDays className="h-4 w-4" aria-hidden="true" />
                 {t('common.startPlanning')}
               </Link>
@@ -65,10 +65,10 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-stone-200 bg-white p-4 shadow-soft">
-            <div className="rounded-md bg-slate-950 p-4 text-white">
+          <div className="rounded-xl border border-stone-200/80 bg-white/80 p-4 shadow-soft backdrop-blur">
+            <div className="rounded-lg bg-[linear-gradient(135deg,#132419,#182a22_55%,#7d3818)] p-4 text-white shadow-inset">
               <div className="flex items-center justify-between">
-                <p className="font-serif text-xl">{t('landing.mockupTitle')}</p>
+                <p className="font-serif text-2xl">{t('landing.mockupTitle')}</p>
                 <Badge status="ai">{t('nav.aiChef')}</Badge>
               </div>
               <div className="mt-5 grid gap-3">
@@ -78,7 +78,7 @@ export default function LandingPage() {
                   [t('landing.mockupPortions'), '3.4 x', 'ai'],
                   [t('landing.mockupMissing'), '680 g', 'warning'],
                 ].map(([label, value, status]) => (
-                  <div key={label} className="rounded-md border border-white/10 bg-white/8 p-4">
+                  <div key={label} className="rounded-md border border-white/10 bg-white/10 p-4 shadow-sm">
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-sm text-stone-300">{label}</span>
                       <Badge status={status}>{value}</Badge>
@@ -90,7 +90,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="how-it-works" className="border-y border-stone-200 bg-white">
+        <section id="how-it-works" className="border-y border-stone-200 bg-white/70 backdrop-blur">
           <div className="mx-auto grid max-w-7xl gap-8 px-5 py-16 lg:grid-cols-2">
             <Card>
               <h2 className="font-serif text-3xl font-semibold">{t('landing.problemTitle')}</h2>
@@ -131,7 +131,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="bg-slate-950 text-white">
+        <section className="bg-[linear-gradient(135deg,#0f172a,#17251d_45%,#38190e)] text-white">
           <div className="mx-auto grid max-w-7xl gap-6 px-5 py-16 lg:grid-cols-4">
             {[
               ['landing.chefsTitle', 'landing.chefsBody', ChefHat],
@@ -154,7 +154,7 @@ export default function LandingPage() {
         <section className="mx-auto flex max-w-7xl flex-col items-start gap-5 px-5 py-16 md:flex-row md:items-center md:justify-between">
           <h2 className="max-w-2xl font-serif text-4xl font-semibold">{t('landing.finalTitle')}</h2>
           <div className="flex gap-3">
-            <Link to="/register" className="rounded-md bg-forest-700 px-5 py-3 text-sm font-semibold text-white hover:bg-forest-600 focus-ring">
+            <Link to="/register" className="rounded-md bg-forest-900 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-forest-700 focus-ring">
               {t('common.createAccount')}
             </Link>
             <Link to="/login" className="rounded-md border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-stone-50 focus-ring">

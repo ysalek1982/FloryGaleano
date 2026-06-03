@@ -21,12 +21,12 @@ export function Button({
   return (
     <button
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition focus-ring disabled:cursor-not-allowed disabled:opacity-50',
-        variant === 'primary' && 'bg-forest-700 text-white hover:bg-forest-600',
-        variant === 'secondary' && 'border border-stone-300 bg-white text-slate-800 hover:bg-stone-50',
-        variant === 'ghost' && 'text-slate-700 hover:bg-stone-100',
-        variant === 'danger' && 'bg-danger-600 text-white hover:bg-danger-700',
-        variant === 'ai' && 'bg-ai-600 text-white hover:bg-ai-700',
+        'inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-bold shadow-sm transition focus-ring disabled:cursor-not-allowed disabled:opacity-50',
+        variant === 'primary' && 'bg-forest-900 text-white shadow-forest-900/15 hover:-translate-y-0.5 hover:bg-forest-700',
+        variant === 'secondary' && 'border border-stone-300 bg-white/95 text-slate-800 hover:-translate-y-0.5 hover:border-forest-200 hover:bg-forest-50',
+        variant === 'ghost' && 'text-slate-700 shadow-none hover:bg-stone-100/80',
+        variant === 'danger' && 'bg-danger-600 text-white shadow-danger-600/15 hover:-translate-y-0.5 hover:bg-danger-700',
+        variant === 'ai' && 'bg-ai-700 text-white shadow-ai-700/15 hover:-translate-y-0.5 hover:bg-ai-600',
         className,
       )}
       {...props}
@@ -47,7 +47,7 @@ export function Badge({ status, children }: { status?: string; children: React.R
           : status === 'ai'
             ? 'border-ai-100 bg-ai-50 text-ai-700'
             : 'border-stone-200 bg-stone-50 text-slate-700'
-  return <span className={cn('inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold', style)}>{children}</span>
+  return <span className={cn('inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold shadow-sm', style)}>{children}</span>
 }
 
 export function PageHeader({
@@ -60,9 +60,10 @@ export function PageHeader({
   action?: React.ReactNode
 }) {
   return (
-    <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-      <div>
-        <h1 className="font-serif text-3xl font-semibold text-slate-950">{title}</h1>
+    <div className="mb-6 flex flex-col gap-4 border-b border-stone-200/80 pb-5 lg:flex-row lg:items-end lg:justify-between">
+      <div className="relative">
+        <div className="mb-3 h-1 w-16 rounded-full bg-gradient-to-r from-copper-500 via-saffron-500 to-forest-600" aria-hidden="true" />
+        <h1 className="font-serif text-4xl font-semibold leading-tight text-slate-950">{title}</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{subtitle}</p>
       </div>
       {action}
@@ -92,19 +93,19 @@ export function MetricCard({
   tone?: 'default' | 'warning' | 'danger' | 'ai'
 }) {
   return (
-    <Card className="min-h-32">
+    <Card className="min-h-32 overflow-hidden">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-slate-500">{label}</p>
-          <p className="mt-3 text-3xl font-semibold text-slate-950">{value}</p>
+          <p className="mt-3 font-serif text-4xl font-semibold leading-none text-slate-950">{value}</p>
         </div>
         <div
           className={cn(
-            'rounded-lg p-2',
-            tone === 'default' && 'bg-forest-50 text-forest-700',
-            tone === 'warning' && 'bg-amber-50 text-amber-700',
-            tone === 'danger' && 'bg-danger-50 text-danger-700',
-            tone === 'ai' && 'bg-ai-50 text-ai-700',
+            'rounded-lg border p-2 shadow-sm',
+            tone === 'default' && 'border-forest-100 bg-forest-50 text-forest-700',
+            tone === 'warning' && 'border-amber-100 bg-amber-50 text-amber-700',
+            tone === 'danger' && 'border-danger-100 bg-danger-50 text-danger-700',
+            tone === 'ai' && 'border-ai-100 bg-ai-50 text-ai-700',
           )}
         >
           <Icon className="h-5 w-5" aria-hidden="true" />
@@ -115,7 +116,7 @@ export function MetricCard({
 }
 
 export function EmptyState({ text }: { text: string }) {
-  return <div className="rounded-md border border-dashed border-stone-300 bg-stone-50 p-6 text-sm text-slate-500">{text}</div>
+  return <div className="rounded-md border border-dashed border-stone-300 bg-cream-50/80 p-6 text-sm font-medium text-slate-500">{text}</div>
 }
 
 export function ReadOnlyNotice() {
@@ -263,7 +264,7 @@ export function Dialog({ title, children, onClose, wide = false }: { title: stri
         tabIndex={-1}
         className={cn('max-h-[92vh] w-full overflow-auto rounded-lg bg-white p-5 shadow-soft focus:outline-none', wide ? 'max-w-4xl' : 'max-w-lg')}
       >
-        <div className="mb-5 flex items-center justify-between">
+        <div className="sticky -top-5 z-20 mb-5 flex items-center justify-between border-b border-stone-200 bg-white/95 py-3 backdrop-blur">
           <h2 id={titleId} className="font-serif text-2xl font-semibold">{title}</h2>
           <Button variant="ghost" onClick={onClose}><XCircle className="h-4 w-4" />{t('common.cancel')}</Button>
         </div>
@@ -295,7 +296,7 @@ export function ResponsiveTable({
   compact?: boolean
 }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-stone-200 bg-white shadow-sm">
+    <div className="overflow-x-auto rounded-lg border border-stone-200 bg-white/95 shadow-sm shadow-inset">
       <table className="min-w-full divide-y divide-stone-200 text-sm">
         {caption && <caption className="sr-only">{caption}</caption>}
         <thead className="table-head sticky top-0 z-10">
@@ -303,7 +304,7 @@ export function ResponsiveTable({
         </thead>
         <tbody className="divide-y divide-stone-100 bg-white">
           {rows.map((row, index) => (
-            <tr key={index} className="odd:bg-white even:bg-stone-50/50 hover:bg-forest-50/40">
+            <tr key={index} className="odd:bg-white even:bg-stone-50/70 hover:bg-saffron-50/60">
               {row.map((cell, cellIndex) => (
                 <td key={cellIndex} className={cn('align-middle text-slate-700', compact ? 'px-3 py-2' : 'px-4 py-3')}>
                   {cell}

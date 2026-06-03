@@ -47,24 +47,25 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' | 'forgot' }) {
 
   return (
     <div className="grid min-h-screen bg-cream-50 lg:grid-cols-[0.9fr_1.1fr]">
-      <section className="hidden bg-slate-950 p-10 text-white lg:flex lg:flex-col lg:justify-between">
+      <section className="hidden bg-[linear-gradient(145deg,#0f172a,#182a22_52%,#7d3818)] p-10 text-white lg:flex lg:flex-col lg:justify-between">
         <Link to="/" className="flex items-center gap-3 focus-ring" aria-label={t('brand.name')}>
-          <span className="rounded-lg bg-forest-700 p-3"><ChefHat className="h-6 w-6" /></span>
+          <span className="rounded-lg bg-white/10 p-3 shadow-sm ring-1 ring-white/15"><ChefHat className="h-6 w-6" /></span>
           <span>
-            <span className="block font-serif text-2xl font-semibold">{t('brand.name')}</span>
-            <span className="text-sm text-stone-300">{t('brand.subtitle')}</span>
+            <span className="block font-serif text-3xl font-semibold leading-none">{t('brand.name')}</span>
+            <span className="mt-1 block text-xs font-bold uppercase tracking-[0.18em] text-cream-200">{t('brand.subtitle')}</span>
           </span>
         </Link>
         <div className="max-w-md">
-          <p className="font-serif text-4xl font-semibold">{t('landing.trustTitle')}</p>
+          <p className="font-serif text-5xl font-semibold leading-tight">{t('landing.trustTitle')}</p>
           <p className="mt-4 leading-7 text-stone-300">{t('landing.trustBody')}</p>
         </div>
       </section>
       <section className="flex items-center justify-center p-5">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md border-stone-200/90 bg-white/90 p-6 backdrop-blur">
           <div className="mb-6 flex items-start justify-between gap-4">
             <div>
-              <h1 className="font-serif text-3xl font-semibold">{t(titleKey)}</h1>
+              <div className="mb-3 h-1 w-14 rounded-full bg-gradient-to-r from-copper-500 to-forest-600" aria-hidden="true" />
+              <h1 className="font-serif text-4xl font-semibold leading-none">{t(titleKey)}</h1>
               <p className="mt-2 text-sm text-slate-600">{t(subtitleKey)}</p>
             </div>
             <PublicLanguageSwitcher compact />

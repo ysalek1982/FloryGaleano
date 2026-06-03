@@ -5,7 +5,7 @@
 @layer base {
   :root {
     color: #17201b;
-    background: #faf7f0;
+    background: #fbf7ed;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -20,7 +20,32 @@
     margin: 0;
     min-width: 320px;
     min-height: 100vh;
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: Aptos, "Avenir Next", "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+    background:
+      radial-gradient(circle at 10% 0%, rgba(216, 148, 31, 0.10), transparent 28rem),
+      radial-gradient(circle at 95% 10%, rgba(47, 138, 91, 0.12), transparent 30rem),
+      linear-gradient(135deg, rgba(255,255,255,0.8), rgba(251,247,237,0.95)),
+      #fbf7ed;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.45;
+    background-image:
+      linear-gradient(rgba(23, 32, 27, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(23, 32, 27, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: linear-gradient(to bottom, black, transparent 80%);
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: 0;
   }
 
   button,
@@ -34,19 +59,19 @@
 
 @layer components {
   .card {
-    @apply rounded-lg border border-stone-200 bg-white shadow-soft;
+    @apply rounded-lg border border-stone-200/80 bg-white/90 shadow-soft shadow-inset backdrop-blur;
   }
 
   .input {
-    @apply w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-forest-600 focus:outline-none focus:ring-2 focus:ring-forest-100;
+    @apply w-full rounded-md border border-stone-300/90 bg-white/95 px-3 py-2 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-forest-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-forest-100;
   }
 
   .label {
-    @apply text-sm font-medium text-slate-700;
+    @apply text-sm font-semibold text-slate-700;
   }
 
   .table-head {
-    @apply bg-stone-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500;
+    @apply bg-[linear-gradient(180deg,#f8f1e5,#efe3cf)] text-left text-xs font-bold uppercase tracking-wide text-slate-600;
   }
 
   .focus-ring {

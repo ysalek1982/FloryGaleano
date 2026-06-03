@@ -78,28 +78,28 @@ function AppShellFrame() {
   }
 
   return (
-    <div className="min-h-screen bg-cream-50 text-slate-950 lg:grid lg:grid-cols-[280px_1fr]">
+    <div className="min-h-screen bg-cream-50 text-slate-950 lg:grid lg:grid-cols-[292px_1fr]">
       {open && <button type="button" className="fixed inset-0 z-30 bg-slate-950/30 lg:hidden" aria-label={t('common.close')} onClick={() => setOpen(false)} />}
-      <aside id="app-sidebar" className={cn('fixed inset-y-0 left-0 z-40 w-72 border-r border-stone-200 bg-white p-4 shadow-panel transition lg:static lg:block lg:translate-x-0', open ? 'translate-x-0' : '-translate-x-full')} data-testid="app-sidebar">
-        <div className="flex items-center gap-3 px-2 py-2">
-          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-forest-900 text-white">
+      <aside id="app-sidebar" className={cn('fixed inset-y-0 left-0 z-40 w-72 border-r border-stone-300/70 bg-[linear-gradient(180deg,#fffaf0,#f4ead8)] p-4 shadow-panel transition lg:static lg:block lg:w-full lg:translate-x-0', open ? 'translate-x-0' : '-translate-x-full')} data-testid="app-sidebar">
+        <div className="flex items-center gap-3 rounded-xl border border-stone-200/80 bg-white/70 px-3 py-3 shadow-sm">
+          <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-gradient-to-br from-forest-900 to-copper-700 text-white shadow-sm">
             <ChefHat className="h-5 w-5" aria-hidden="true" />
           </span>
           <div>
-            <p className="font-serif text-lg font-semibold">{t('brand.name')}</p>
-            <p className="text-xs text-slate-500">{t('brand.byline')}</p>
+            <p className="font-serif text-xl font-semibold leading-none">{t('brand.name')}</p>
+            <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.18em] text-copper-700">{t('brand.byline')}</p>
           </div>
         </div>
         <Link
           to="/app/ai-chef"
-          className="mt-5 flex items-center justify-between rounded-lg border border-ai-100 bg-ai-50 px-3 py-3 text-sm font-semibold text-ai-800 focus-ring"
+          className="mt-5 flex items-center justify-between rounded-lg border border-ai-100 bg-white/80 px-3 py-3 text-sm font-bold text-ai-800 shadow-sm focus-ring hover:border-ai-200 hover:bg-ai-50"
           onClick={() => setOpen(false)}
           data-testid="ai-quick-action"
         >
           <span className="inline-flex items-center gap-2"><Brain className="h-4 w-4" />{t('nav.aiChef')}</span>
-          <span className="rounded-full bg-white px-2 py-0.5 text-xs">{t('common.enabled')}</span>
+          <span className="rounded-full border border-ai-100 bg-white px-2 py-0.5 text-xs">{t('common.enabled')}</span>
         </Link>
-        <nav className="mt-5 grid gap-1" aria-label={t('nav.dashboard')}>
+        <nav className="mt-5 grid gap-1.5" aria-label={t('nav.dashboard')}>
           {navItems.map((item) => {
             const Icon = item.icon
             return (
@@ -108,8 +108,8 @@ function AppShellFrame() {
                 to={item.to}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center justify-between rounded-md px-3 py-2.5 text-sm font-medium transition focus-ring',
-                    isActive ? 'bg-forest-50 text-forest-800' : 'text-slate-650 hover:bg-stone-50 hover:text-slate-950',
+                    'flex items-center justify-between rounded-md px-3 py-2.5 text-sm font-bold transition focus-ring',
+                    isActive ? 'border border-forest-100 bg-white text-forest-900 shadow-sm' : 'text-slate-650 hover:bg-white/70 hover:text-slate-950',
                   )
                 }
                 onClick={() => setOpen(false)}
@@ -127,8 +127,8 @@ function AppShellFrame() {
         </nav>
       </aside>
       <div className="min-w-0">
-        <header className="sticky top-0 z-30 border-b border-stone-200 bg-cream-50/90 px-4 py-3 backdrop-blur lg:px-8">
-          <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-30 border-b border-stone-200/80 bg-cream-50/82 px-4 py-3 backdrop-blur-xl lg:px-8">
+          <div className="mx-auto flex max-w-[1600px] items-center gap-3">
             <button type="button" className="rounded-md p-2 text-slate-700 hover:bg-stone-100 focus-ring lg:hidden" onClick={() => setOpen((value) => !value)} aria-label={t('nav.openMenu')} aria-controls="app-sidebar" aria-expanded={open} data-testid="mobile-nav-toggle">
               <Menu className="h-5 w-5" aria-hidden="true" />
             </button>
@@ -169,7 +169,7 @@ function AppShellFrame() {
             </button>
           </div>
         </header>
-        <main className="px-4 py-6 lg:px-8">
+        <main className="mx-auto w-full max-w-[1600px] px-4 py-7 lg:px-8">
           {isDataLoading ? (
             <div data-testid="app-data-loading">
               <LoadingSkeleton />
