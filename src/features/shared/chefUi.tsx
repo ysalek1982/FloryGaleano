@@ -283,16 +283,33 @@ export function Field({ label, error, children }: { label: string; error?: strin
   )
 }
 
-export function ResponsiveTable({ headers, rows }: { headers: string[]; rows: React.ReactNode[][] }) {
+export function ResponsiveTable({
+  headers,
+  rows,
+  caption,
+  compact = false,
+}: {
+  headers: string[]
+  rows: React.ReactNode[][]
+  caption?: string
+  compact?: boolean
+}) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-stone-200">
+    <div className="overflow-x-auto rounded-lg border border-stone-200 bg-white shadow-sm">
       <table className="min-w-full divide-y divide-stone-200 text-sm">
-        <thead className="table-head">
-          <tr>{headers.map((header) => <th key={header} scope="col" className="px-4 py-3">{header}</th>)}</tr>
+        {caption && <caption className="sr-only">{caption}</caption>}
+        <thead className="table-head sticky top-0 z-10">
+          <tr>{headers.map((header) => <th key={header} scope="col" className={cn('whitespace-nowrap px-4 text-left font-semibold', compact ? 'py-2' : 'py-3')}>{header}</th>)}</tr>
         </thead>
         <tbody className="divide-y divide-stone-100 bg-white">
           {rows.map((row, index) => (
-            <tr key={index}>{row.map((cell, cellIndex) => <td key={cellIndex} className="px-4 py-3 text-slate-700">{cell}</td>)}</tr>
+            <tr key={index} className="odd:bg-white even:bg-stone-50/50 hover:bg-forest-50/40">
+              {row.map((cell, cellIndex) => (
+                <td key={cellIndex} className={cn('align-middle text-slate-700', compact ? 'px-3 py-2' : 'px-4 py-3')}>
+                  {cell}
+                </td>
+              ))}
+            </tr>
           ))}
         </tbody>
       </table>
